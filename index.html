@@ -1,0 +1,2714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#9fd8f5">
+<title>Sukkah Builder</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+background:#9fd8f5;user-select:none;-webkit-user-select:none;overscroll-behavior:none;}
+canvas{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;}
+
+#ui{position:fixed;inset:0;pointer-events:none;display:flex;flex-direction:column;
+justify-content:space-between;transition:opacity .25s ease, visibility .25s;}
+#ui.ui-hidden{opacity:0;visibility:hidden;}
+
+button{pointer-events:auto;font-family:inherit;border:none;cursor:pointer;outline:none;}
+
+#topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;
+padding:calc(env(safe-area-inset-top,0px) + 10px) 12px 0 12px;}
+#levelBadge{background:rgba(255,255,255,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+border-radius:15px;padding:9px 13px;box-shadow:0 4px 14px rgba(0,0,0,.13);max-width:66%;}
+#levelNum{font-size:9px;font-weight:900;letter-spacing:.14em;color:#e08b2a;}
+#levelName{font-size:15px;font-weight:800;color:#2c3e50;line-height:1.15;margin-top:1px;}
+#levelSub{font-size:10.5px;color:#7f8c9a;margin-top:2px;line-height:1.15;}
+#levelNavRow{display:flex;align-items:center;gap:7px;margin-top:7px;}
+.navmini{width:28px;height:28px;border-radius:9px;background:#eef2f6;color:#5d6b78;
+font-size:15px;font-weight:900;line-height:1;display:flex;align-items:center;
+justify-content:center;transition:transform .12s, background .15s;}
+.navmini:active:not(:disabled){transform:scale(.88);}
+.navmini:disabled{opacity:.28;cursor:default;}
+#navProgress{font-size:10.5px;font-weight:800;color:#8b98a5;letter-spacing:.04em;
+min-width:34px;text-align:center;}
+#topbtns{display:flex;gap:7px;}
+.iconbtn{width:42px;height:42px;border-radius:14px;background:rgba(255,255,255,.92);
+backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);font-size:19px;
+box-shadow:0 4px 14px rgba(0,0,0,.13);display:flex;align-items:center;justify-content:center;
+transition:transform .12s;}
+.iconbtn:active{transform:scale(.88);}
+
+#goalPanel{margin:9px 12px 0;background:rgba(255,255,255,.92);backdrop-filter:blur(10px);
+-webkit-backdrop-filter:blur(10px);border-radius:15px;padding:9px 12px;
+box-shadow:0 4px 14px rgba(0,0,0,.13);pointer-events:auto;max-width:300px;}
+#goalHead{display:flex;justify-content:space-between;align-items:center;
+font-size:10px;font-weight:900;letter-spacing:.11em;color:#e08b2a;cursor:pointer;}
+#goalHead .arrow{font-size:11px;transition:transform .2s;color:#b9c4cf;}
+#goalPanel.collapsed #goalList{display:none;}
+#goalPanel.collapsed #goalHead .arrow{transform:rotate(-90deg);}
+#goalList{margin-top:6px;display:flex;flex-direction:column;gap:3px;}
+.goal{display:flex;gap:6px;font-size:11.5px;color:#8b98a5;line-height:1.25;align-items:flex-start;
+transition:color .2s;}
+.goal.ok{color:#2e9e4f;font-weight:700;}
+.goal .gchk{flex:0 0 13px;font-weight:900;font-size:11px;line-height:1.35;}
+.goal em{font-style:normal;opacity:.65;font-size:10.5px;}
+
+#sukkahInfo{margin-top:7px;font-size:10.5px;color:#5d6b78;line-height:1.5;
+background:#f4f7fa;border-radius:10px;padding:7px 10px;font-weight:600;}
+#sukkahInfo b{color:#2c3e50;}
+#sukkahInfo .warn{color:#c0392b;font-weight:800;}
+#sukkahInfo .good{color:#2e9e4f;font-weight:800;}
+
+#bottom{pointer-events:none;}
+#completeBanner{
+display:none; align-items:center; gap:10px;
+margin:0 12px 8px; padding:11px 13px;
+background:linear-gradient(135deg,#5ec98a,#3aa76d);
+border-radius:15px;
+box-shadow:0 8px 26px rgba(58,167,109,.45);
+pointer-events:auto;
+transform-origin:bottom center;
+}
+#completeBanner.show{ display:flex; animation:bannerIn .45s cubic-bezier(.2,.9,.3,1.15); }
+@keyframes bannerIn{
+0%{ transform:translateY(24px) scale(.9); opacity:0; }
+100%{ transform:translateY(0) scale(1); opacity:1; }
+}
+#cbText{flex:1;color:#fff;font-size:12.5px;font-weight:600;line-height:1.3;}
+#cbText b{font-weight:900;}
+#cbNext{
+background:rgba(255,255,255,.96);
+color:#2e9e4f;
+padding:10px 15px;
+border-radius:11px;
+font-weight:900;
+font-size:12px;
+white-space:nowrap;
+box-shadow:0 3px 10px rgba(0,0,0,.12);
+transition:transform .12s;
+}
+#cbNext:active{transform:scale(.94);}
+
+#hint{margin:0 12px 8px;padding:9px 14px;background:rgba(44,62,80,.9);color:#fff;
+border-radius:13px;font-size:12px;font-weight:600;text-align:center;opacity:0;
+transition:opacity .3s;pointer-events:none;box-shadow:0 6px 20px rgba(0,0,0,.2);}
+#hint.show{opacity:1;}
+#bottombar{background:rgba(255,255,255,.95);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+border-radius:20px 20px 0 0;padding:9px 0 calc(env(safe-area-inset-bottom,0px) + 8px);
+box-shadow:0 -6px 24px rgba(0,0,0,.14);pointer-events:auto;}
+#tabs{display:flex;gap:6px;padding:0 12px 9px;}
+.tab{flex:1;padding:9px 4px;border-radius:12px;background:#eef2f6;font-size:12px;font-weight:800;
+color:#8b98a5;transition:.15s;}
+.tab.active{background:linear-gradient(135deg,#ffb347,#ff8c42);color:#fff;
+box-shadow:0 4px 12px rgba(255,140,66,.4);}
+#items{display:flex;gap:8px;overflow-x:auto;padding:2px 12px 4px;scrollbar-width:none;
+-webkit-overflow-scrolling:touch;}
+#items::-webkit-scrollbar{display:none;}
+.item{flex:0 0 84px;border-radius:14px;background:#f4f7fa;border:2px solid transparent;
+padding:8px 4px;text-align:center;transition:.15s;cursor:pointer;}
+.item.sel{border-color:#ff8c42;background:#fff5eb;transform:translateY(-2px);
+box-shadow:0 5px 14px rgba(255,140,66,.3);}
+.item .ico{font-size:23px;line-height:1;}
+.item .nm{font-size:9.5px;font-weight:800;color:#2c3e50;margin-top:4px;line-height:1.1;}
+.item .tip{font-size:8.5px;color:#95a2af;margin-top:2px;line-height:1.1;}
+
+#heightRow{display:none;align-items:center;gap:8px;padding:7px 14px 2px;
+font-size:11px;color:#7f8c9a;font-weight:700;border-top:1px solid #eef2f6;margin-top:5px;}
+#heightChips{display:flex;gap:5px;flex-wrap:wrap;}
+.hchip{padding:5px 10px;border-radius:9px;background:#eef2f6;color:#8b98a5;
+font-size:11px;font-weight:800;transition:.15s;}
+.hchip.active{background:linear-gradient(135deg,#ffb347,#ff8c42);color:#fff;
+box-shadow:0 3px 8px rgba(255,140,66,.4);}
+.hchip:active{transform:scale(.92);}
+#heightRow .hunit{font-size:9.5px;color:#b9c4cf;font-weight:700;margin-left:auto;}
+
+#previewBar{position:fixed;left:12px;right:12px;
+bottom:calc(env(safe-area-inset-bottom,0px) + 12px);display:flex;gap:8px;align-items:center;
+z-index:40;transform:translateY(150%);transition:transform .32s cubic-bezier(.2,.9,.3,1);
+pointer-events:none;}
+#previewBar.show{transform:translateY(0);pointer-events:auto;}
+#previewLabel{flex:1;background:rgba(44,62,80,.9);color:#fff;padding:11px 14px;border-radius:15px;
+font-size:11.5px;font-weight:600;line-height:1.25;}
+#previewExit{background:linear-gradient(135deg,#ffb347,#ff8c42);color:#fff;padding:12px 16px;
+border-radius:15px;font-weight:900;font-size:12.5px;box-shadow:0 6px 18px rgba(255,140,66,.45);}
+
+#modal{position:fixed;inset:0;background:rgba(20,30,40,.55);backdrop-filter:blur(5px);
+-webkit-backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;
+padding:22px;z-index:60;opacity:0;pointer-events:none;transition:opacity .25s;}
+#modal.show{opacity:1;pointer-events:auto;}
+#modalCard{background:#fff;border-radius:24px;padding:24px 22px;max-width:420px;width:100%;
+box-shadow:0 22px 60px rgba(0,0,0,.35);transform:scale(.88);transition:transform .28s cubic-bezier(.2,.9,.3,1.2);
+max-height:82vh;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+#modal.show #modalCard{transform:scale(1);}
+#modalCard h2{margin:0 0 8px;font-size:21px;color:#2c3e50;line-height:1.2;}
+#modalCard .eyebrow{font-size:10px;font-weight:900;letter-spacing:.14em;color:#e08b2a;margin-bottom:6px;}
+#modalCard p{font-size:14px;line-height:1.55;color:#57646f;margin:0 0 12px;}
+#modalCard .tipbox{background:#fff7ec;border-left:4px solid #ffb347;border-radius:0 12px 12px 0;
+padding:11px 13px;font-size:13px;color:#7a6a55;line-height:1.5;margin-bottom:16px;}
+#modalCard ul{margin:0 0 14px;padding-left:20px;font-size:13.5px;line-height:1.6;color:#57646f;}
+#modalCard li{margin-bottom:6px;}
+#modalBtn{width:100%;padding:15px;border-radius:15px;background:linear-gradient(135deg,#ffb347,#ff8c42);
+color:#fff;font-weight:900;font-size:15px;box-shadow:0 6px 18px rgba(255,140,66,.4);transition:transform .12s;}
+#modalBtn:active{transform:scale(.97);}
+#modalBtn.alt{background:linear-gradient(135deg,#5ec98a,#3aa76d);box-shadow:0 6px 18px rgba(58,167,109,.4);}
+#modalBtn2{width:100%;padding:14px;border-radius:15px;margin-top:9px;display:none;
+background:#eef2f6;color:#57646f;font-weight:900;font-size:14px;transition:transform .12s;}
+#modalBtn2:active{transform:scale(.97);}
+
+.src{background:#f4f7fa;border-radius:12px;padding:11px 13px;margin:0 0 11px;
+font-size:13px;line-height:1.55;color:#4b5866;}
+.src .ref{display:block;font-size:10px;font-weight:900;letter-spacing:.09em;
+color:#e08b2a;margin-bottom:4px;text-transform:uppercase;}
+.src .heb{direction:rtl;display:block;font-size:16px;color:#2c3e50;
+font-family:"Times New Roman",Times,serif;margin:5px 0;line-height:1.55;}
+.src b{color:#2c3e50;}
+.disc{font-size:11px;color:#95a2af;font-style:italic;line-height:1.45;
+margin-top:4px;padding-top:10px;border-top:1px solid #eef2f6;}
+
+@media (max-height:660px){
+#goalPanel{max-width:250px;padding:7px 11px;}
+.goal{font-size:11px;}
+.item{flex:0 0 76px;}
+}
+</style>
+</head>
+<body>
+
+<canvas id="c"></canvas>
+
+<div id="ui">
+<div id="top">
+<div id="topbar">
+<div id="levelBadge">
+<div id="levelNum">LEVEL 1</div>
+<div id="levelName">Sukkah Basics</div>
+<div id="levelSub">Build your very first sukkah!</div>
+<div id="levelNavRow">
+<button class="navmini" id="btnPrev" aria-label="Previous level">‹</button>
+<span id="navProgress">1 / 7</span>
+<button class="navmini" id="btnNext" aria-label="Next level">›</button>
+</div>
+</div>
+<div id="topbtns">
+<button class="iconbtn" id="btnPreview" aria-label="Preview">👁️</button>
+<button class="iconbtn" id="btnLesson" aria-label="Rules">📖</button>
+<button class="iconbtn" id="btnReset" aria-label="Reset">↺</button>
+</div>
+</div>
+<div id="goalPanel">
+<div id="goalHead">
+<span>GOALS <span id="goalCount">0/4</span></span>
+<span class="arrow">▾</span>
+</div>
+<div id="sukkahInfo">—</div>
+<div id="goalList"></div>
+</div>
+</div>
+
+<div id="bottom">
+<div id="completeBanner">
+<div id="cbText"></div>
+<button id="cbNext"></button>
+</div>
+<div id="hint"></div>
+<div id="bottombar">
+<div id="tabs">
+<button class="tab active" data-cat="walls">🧱 Walls</button>
+<button class="tab" data-cat="roof">🌿 Schach</button>
+<button class="tab" data-cat="decor">✨ Decor</button>
+</div>
+<div id="items"></div>
+<div id="heightRow">
+<span class="hlabel">Height:</span>
+<div id="heightChips"></div>
+<span class="hunit">tefachim</span>
+</div>
+</div>
+</div>
+</div>
+
+<div id="previewBar">
+<div id="previewLabel">👁️ <b>Target Sukkah</b><br>Drag to spin · pinch to zoom</div>
+<button id="previewExit">✕ Back</button>
+</div>
+
+<div id="modal">
+<div id="modalCard">
+<div class="eyebrow" id="modalEyebrow"></div>
+<h2 id="modalTitle"></h2>
+<div id="modalBody"></div>
+<button id="modalBtn">Got it!</button>
+<button id="modalBtn2">📚 Read more</button>
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* =========================================================
+SUKKAH BUILDER — v5
+v5 changes:
+  • FIX: re-editing a saved level no longer wipes the build.
+      - ghosts are un-raycastable once a wall/tile is placed
+      - shared ghost materials are marked __shared (not disposed)
+      - save is verified before it replaces a good save
+      - invisible objects are skipped by the raycaster
+  • NEW: live dimensions + schach-gap analysis (sukkot splitting)
+      - width × depth in tefachim
+      - schach tiles covered / total
+      - full-row / full-column break detection
+      - each split-off part must be at least 7×7 tefachim
+  • NEW LEVEL: "Branches Overhead" — a tree with dense leaves
+      hangs over the sukkah. Its shade does NOT count as schach.
+  • Deep-dive "Read more" sources updated for all 7 levels.
+========================================================= */
+
+/* ---------------- CONSTANTS ---------------- */
+const TEFACH = 0.22;
+const CELL = 1.4;
+const TILE_TEF = CELL / TEFACH;          // ≈ 6.36 tefachim per roof tile
+const WALL_H = 10 * TEFACH;
+const ROOF_Y = WALL_H + 0.10;
+const PREVIEW_Z = 60;
+const MIN_SUKKAH_TEF = 7;                // minimum sukkah is 7×7 tefachim
+
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+
+/* ---------------- LEVELS ---------------- */
+const LEVELS = [
+{
+name:"Sukkah Basics",
+sub:"Build your very first sukkah!",
+w:2, d:2,
+completeWalls:2, partialWalls:1,
+minShade:40, maxShade:100, minDecor:0,
+lesson:"A sukkah needs at least <b>2 complete walls</b>, plus a <b>third wall</b> at least a tefach wide. And the walls must be at least <b>10 tefachim</b> tall — about 1 meter.",
+tip:"Tap the glowing outlines to build walls. Watch out — the 🚧 Short Fence is only 5 tefachim tall!"
+},
+{
+name:"Branches Overhead",
+sub:"A tree hangs over the sukkah",
+w:3, d:3,
+completeWalls:3, partialWalls:1,
+minShade:50, maxShade:100, minDecor:0,
+splitRule:true,
+tree:{ rows:1 },
+lesson:"If a tree hangs over your sukkah, its leaves do <b>not</b> count as schach. The schach itself must give the shade — if the tree gives more shade than your schach, the sukkah is invalid (it's like sitting inside a house).",
+tip:"🌳 The big tree shades the back row. The tree's leaves don't count — you must still lay real schach there!",
+intro: {
+eyebrow: "✨ NEW CONCEPT",
+title: "A Tree Over the Sukkah",
+body: `<p>What if a big leafy tree hangs over your sukkah?</p>
+<p>The Sages taught: a sukkah shaded by a tree is <b>like one built inside a house</b> — the shade must come from <b>the sukkah's own schach</b>, not from something else.</p>
+<div class="tipbox">🌳 The tree's leaves are <b>not schach</b> — they're still attached to the ground. Even though it <i>looks</i> shady, that shade doesn't count.</div>
+<p>So you must lay <b>real schach</b> under the tree too, until <b>your</b> schach gives more shade than the tree does.</p>`
+}
+},
+{
+name:"Roof Rules",
+sub:"Schach must come from plants",
+w:3, d:2,
+completeWalls:3, partialWalls:1,
+minShade:50, maxShade:100, minDecor:0,
+splitRule:true,
+lesson:"The roof is called <b>schach</b>. It must be made from plants that grew from the ground and were cut down. Metal and plastic don't count!",
+tip:"Schach gives shade by day, but you should still be able to see the stars at night."
+},
+{
+name:"See the Stars",
+sub:"More shade than sun — but not too much",
+w:3, d:3,
+completeWalls:4, partialWalls:0,
+minShade:50, maxShade:88, minDecor:2,
+lesson:"The schach should give <b>more shade than sun</b>, but leave enough gaps that you can <b>see the stars</b> at night.",
+tip:"Dense schach (like Wooden Slats) can block too much sky. Try mixing materials or leaving a tile open!"
+},
+{
+name:"Master Builder",
+sub:"Build the perfect sukkah",
+w:3, d:3,
+completeWalls:4, partialWalls:0,
+minShade:55, maxShade:85, minDecor:4,
+splitRule:true,
+lesson:"You're a sukkah master! Build all four walls, balance the shade just right, and hang decorations to make it beautiful.",
+tip:"Chag Sameach! A decorated sukkah is a beautiful mitzvah — it's called <i>hiddur mitzvah</i>."
+},
+{
+name:"Lavud — Gaps Count!",
+sub:"The magical 3-tefach rule",
+w:2, d:2,
+completeWalls:2, partialWalls:2,
+minShade:45, maxShade:100, minDecor:0,
+lesson:"<b>Lavud</b> is a special rule: any gap less than <b>3 tefachim</b> (about 24 cm) counts as if it were <b>closed</b>. So a wall made of horizontal bands spaced closer than 3 tefachim apart counts as a solid wall — even with no fabric at all!",
+tip:"Try the ➖ Straps Only wall. The bands are spaced under 3 tefachim, so lavud makes it a real wall!",
+intro: {
+eyebrow: "✨ NEW CONCEPT",
+title: "The Lavud Principle",
+body: `<p>What if you had no wood, no fabric, no brick — just a few ropes?</p>
+<p>Jewish law has a beautiful rule called <b>lavud</b> (לָבוּד, "attached"). Any gap smaller than <b>3 tefachim</b> — about 24 cm — is treated as if it were <b>completely closed</b>.</p>
+<div class="tipbox">So if you wrap bands around the sukkah at intervals closer than 3 tefachim, the gaps between them count as walls. You barely need anything at all!</div>
+<p>Try building this sukkah using the <b>➖ Straps Only</b> wall material. 🌿</p>`
+}
+},
+{
+name:"Fabric & Straps",
+sub:"Hold your walls against the wind",
+w:3, d:2,
+completeWalls:3, partialWalls:1,
+minShade:50, maxShade:100, minDecor:2,
+lesson:"Fabric walls can blow in the wind, which is a problem — a wall that flaps around isn't really a wall. The solution: wrap <b>tight bands</b> around the sukkah. With bands spaced under 3 tefachim apart, the wall is held firm, and lavud makes the gaps count as closed.",
+tip:"Loose fabric alone won't work. Choose 🪢 Fabric + Straps to build a proper wall.",
+intro: {
+eyebrow: "✨ NEW CONCEPT",
+title: "Fabric & the Wind",
+body: `<p>Fabric walls are light and breezy — but if the wind blows them around, they don't count as walls at all.</p>
+<p>The fix: wrap <b>tight bands</b> around the sukkah. Bands spaced <b>less than 3 tefachim</b> apart hold the fabric still.</p>
+<div class="tipbox">Because of <b>lavud</b>, the gaps between the bands count as closed. The result is a solid wall — even with just fabric and straps!</div>
+<p>⚠️ Loose fabric (🧵) alone is not valid. Use 🪢 <b>Fabric + Straps</b> instead.</p>`
+}
+}
+];
+
+/* ---------------- DEEP-DIVE SOURCES (indexed by level) ---------------- */
+const SOURCES = [
+{
+title:"Two Walls, a Tefach, and Ten Tefachim",
+body:`
+<p>The Torah commands us to sit in <i>sukkot</i> — the word is <b>plural</b>:</p>
+<div class="src">
+<span class="ref">Vayikra 23:42 · Torah</span>
+<span class="heb">בַּסֻּכֹּת תֵּשְׁבוּ שִׁבְעַת יָמִים</span>
+"You shall dwell in <b>sukkot</b> for seven days."
+</div>
+<div class="src">
+<span class="ref">Gemara · Sukkah 6b–7a</span>
+From the plural "<b>sukkot</b>" the Sages learned that a sukkah needs <b>at least two walls</b>. A third wall — even one only a <b>tefach</b> (handbreadth) wide — makes the structure look like a real dwelling and completes it.
+</div>
+<div class="src">
+<span class="ref">Mishnah · Sukkah 1:1</span>
+"A sukkah that is less than <b>ten tefachim</b> high... is invalid." Ten tefachim is the smallest measure that can count as a dwelling.
+</div>
+<div class="src">
+<span class="ref">Rambam · Hilchot Sukkah 4:1–2 · Shulchan Aruch · Orach Chaim 630:1</span>
+"A sukkah requires <b>two complete walls</b>, and a third wall of even a single tefach." And: a sukkah must be at least <b>10 tefachim</b> tall.
+</div>
+<p class="disc">Paraphrased and simplified for young builders. For practical halacha, always learn with your rabbi.</p>
+`
+},
+{
+title:"A Tree Over the Sukkah",
+body:`
+<div class="src">
+<span class="ref">Mishnah · Sukkah 1:2</span>
+"One who makes his sukkah <b>under a tree</b> — it is as though he made it <b>inside a house</b>." The sukkah must be shaded by <b>its own schach</b>, not by something else.
+</div>
+<div class="src">
+<span class="ref">Gemara · Sukkah 9b</span>
+The Gemara discusses a sukkah beneath the branches of a tree. Branches <b>still attached</b> to the tree are not schach — schach must be <b>detached</b> from the ground.
+</div>
+<div class="src">
+<span class="ref">Rambam · Hilchot Sukkah 5:14 (paraphrase)</span>
+If a tree overhangs the sukkah, one must ensure the <b>schach's shade is greater</b> than the tree's shade. If the tree gives the majority of the shade, the sukkah is invalid.
+</div>
+<div class="src">
+<span class="ref">Shulchan Aruch · Orach Chaim 626:1 (with Rema)</span>
+The codifiers discuss adding schach <b>beneath overhanging branches</b> so that the shade of the schach dominates.
+</div>
+<p class="disc">Paraphrased and simplified for young builders. For practical halacha, always learn with your rabbi.</p>
+`
+},
+{
+title:"Schach: Grown from the Ground, Cut Down",
+body:`
+<p>The Torah ties the sukkah to the harvest:</p>
+<div class="src">
+<span class="ref">Devarim 16:13 · Torah</span>
+<span class="heb">בְּאָסְפְּךָ מִגָּרְנְךָ וּמִיִּקְבֶךָ</span>
+"...when you gather in from your <b>threshing floor</b> and your <b>winepress</b>."
+</div>
+<div class="src">
+<span class="ref">Gemara · Sukkah 12a</span>
+Just as a threshing floor and a winepress are things that <b>grow from the ground</b> and are <b>not susceptible to tumah</b>, so too the schach must be made of things that grow from the ground and have been <b>detached</b> from it. Metal and plastic are disqualified.
+</div>
+<div class="src">
+<span class="ref">Mishnah · Sukkah 1:4</span>
+Rabbi Yehudah permits roofing with wooden <i>nesarim</i> (boards); Rabbi Meir forbids it — because a roof of boards looks like an ordinary ceiling, and a sukkah must not feel like a permanent house.
+</div>
+<div class="src">
+<span class="ref">Shulchan Aruch · Orach Chaim 629</span>
+The codifiers list what may and may not be used for schach, and the rule that a sukkah roofed with something that receives tumah is invalid.
+</div>
+<p class="disc">Paraphrased and simplified for young builders. For practical halacha, always learn with your rabbi.</p>
+`
+},
+{
+title:"More Shade Than Sun — A Temporary Home",
+body:`
+<div class="src">
+<span class="ref">Vayikra 23:43 · Torah</span>
+<span class="heb">לְמַעַן יֵדְעוּ דֹרֹתֵיכֶם כִּי בַסֻּכּוֹת הוֹשַׁבְתִּי אֶת בְּנֵי יִשְׂרָאֵל</span>
+"...so that your generations may know that I caused the Children of Israel to dwell in <b>sukkot</b>."
+</div>
+<div class="src">
+<span class="ref">Gemara · Sukkah 2a, 26a</span>
+The sukkah must be a <b>dirat arai</b> — a <b>temporary dwelling</b>, not a permanent house. That is why the schach is loose, the walls are flimsy, and the stars shine through.
+</div>
+<div class="src">
+<span class="ref">Shulchan Aruch · Orach Chaim 631:1</span>
+<i>Tzilata merubah mechamata</i> — the shade of the schach must be <b>greater than the sunlight</b> it lets through. If the sun wins, the sukkah is invalid.
+</div>
+<div class="src">
+<span class="ref">Zohar · Emor</span>
+The sukkah is called <i>tzila demehemnuta</i> — "the shade of faith."
+</div>
+<p class="disc">Paraphrased and simplified for young builders. For practical halacha, always learn with your rabbi.</p>
+`
+},
+{
+title:"Hiddur Mitzvah — Beautifying the Mitzvah",
+body:`
+<div class="src">
+<span class="ref">Shemot 15:2 · Torah</span>
+<span class="heb">זֶה אֵלִי וְאַנְוֵהוּ</span>
+"This is my God, and I will <b>beautify</b> Him."
+</div>
+<div class="src">
+<span class="ref">Mechilta · Beshalach; Gemara · Shabbat 133b</span>
+Rabbi Yishmael taught: "I will beautify Him" means — <b>beautify yourself before Him in mitzvot</b>. Make a beautiful sukkah, a beautiful lulav, a beautiful shofar, beautiful tzitzit.
+</div>
+<div class="src">
+<span class="ref">Zohar · Emor — the Ushpizin</span>
+The Zohar teaches that seven holy guests — Avraham, Yitzchak, Yaakov, Yosef, Moshe, Aharon and David — visit the sukkah, each on his own night of the festival. We hang their signs to welcome them.
+</div>
+<div class="src">
+<span class="ref">Shulchan Aruch · Orach Chaim 656:1 (Rema)</span>
+The Rema writes that one should decorate the sukkah with beautiful things, and that it is a mitzvah to do so.
+</div>
+<p class="disc">Paraphrased and simplified for young builders. For practical halacha, always learn with your rabbi.</p>
+`
+},
+{
+title:"Lavud — The Gap That Isn't There",
+body:`
+<div class="src">
+<span class="ref">Talmudic principle</span>
+<span class="heb">כָּל פָּחוֹת מִשְּׁלשָׁה טְפָחִים כְּלָבוּד דָּמִי</span>
+"Anything less than <b>three tefachim</b> is considered <b>joined</b> (<i>lavud</i>)."
+</div>
+<div class="src">
+<span class="ref">Gemara · Sukkah 5b; Eruvin 10a</span>
+The principle runs throughout the Talmud. A gap of under three tefachim (roughly 24 cm) is treated as though it were <b>completely closed</b>. A row of boards, bands or planks with small gaps between them can therefore form a single, solid wall.
+</div>
+<div class="src">
+<span class="ref">Applied to the sukkah</span>
+Wrap bands around the sukkah closer than 3 tefachim apart, and the wall counts as <b>sealed</b> — even if the bands themselves are thin and you can see right through them.
+</div>
+<div class="src">
+<span class="ref">Rambam · Hilchot Sukkah 4:3; Shulchan Aruch · Orach Chaim 630</span>
+The codifiers rule that <i>lavud</i> applies to the walls of the sukkah: the small gaps count as closed and the wall is valid.
+</div>
+<p class="disc">Paraphrased and simplified for young builders. For practical halacha, always learn with your rabbi.</p>
+`
+},
+{
+title:"A Wall That Stands in the Wind",
+body:`
+<div class="src">
+<span class="ref">The rule of the mechitzah</span>
+A wall only counts as a wall if it can <b>stand up to an ordinary wind</b> — <i>ruach metzuyah</i>. A curtain that billows and flaps is not a wall; it is a curtain.
+</div>
+<div class="src">
+<span class="ref">Rambam · Hilchot Sukkah 4:3; Tur &amp; Shulchan Aruch · Orach Chaim 630</span>
+A sukkah wall must be strong enough to hold its shape in a normal wind. This is why the <i>poskim</i> discuss cloth walls at length — cloth is permitted, but only if it is <b>tied or weighted down</b>.
+</div>
+<div class="src">
+<span class="ref">Lavud to the rescue</span>
+<span class="heb">כָּל פָּחוֹת מִשְּׁלשָׁה טְפָחִים כְּלָבוּד דָּמִי</span>
+Bands wrapped less than 3 tefachim apart hold the fabric still <b>and</b> close the gaps between them. Two principles, one solid wall.
+</div>
+<div class="src">
+<span class="ref">Mishnah · Sukkah 1:2</span>
+"A sukkah under a tree is like one built inside a house." — The Sages were careful that the sukkah's shade come from <b>its own schach</b>, and not from something else.
+</div>
+<p class="disc">Paraphrased and simplified for young builders. For practical halacha, always learn with your rabbi.</p>
+`
+}
+];
+
+/* ---------------- MATERIALS ---------------- */
+const WALLS = [
+{ id:'bamboo', name:'Bamboo Mats', emoji:'🎋', height:10, valid:true, color:0xd9b877, tex:'bamboo' },
+{ id:'wood', name:'Wood Planks', emoji:'🪵', height:10, valid:true, color:0xb07a45, tex:'wood' },
+{ id:'canvas', name:'Canvas Walls', emoji:'⛺', height:10, valid:true, color:0xefe3c8, tex:'canvas' },
+{ id:'brick', name:'Brick Wall', emoji:'🧱', height:10, valid:true, color:0xb1503f, tex:'brick' },
+{ id:'fence', name:'Short Fence', emoji:'🚧', height:5, valid:false, color:0xd8b070, tex:'fence' },
+{ id:'wire', name:'Chicken Wire', emoji:'🕸️', height:10, valid:false, color:0xa8b0b8, tex:'wire' },
+{ id:'fabricLoose', name:'Loose Fabric', emoji:'🧵', height:10, valid:false, color:0xc9a8d4, tex:'fabricLoose' },
+{ id:'fabricStraps', name:'Fabric + Straps', emoji:'🪢', height:10, valid:true, color:0xb088c4, tex:'fabricStraps' },
+{ id:'strapsOnly', name:'Straps Only', emoji:'➖', height:10, valid:true, color:0x8b6a9c, tex:'strapsOnly' }
+];
+WALLS.forEach(m => {
+if(m.id === 'fence') m.tip = 'Only 5 tefachim ✗';
+else if(m.id === 'wire') m.tip = 'Wind blows through ✗';
+else if(m.id === 'fabricLoose') m.tip = 'Blows in wind ✗';
+else if(m.id === 'fabricStraps') m.tip = 'Lavud ✓ bands <3 tf';
+else if(m.id === 'strapsOnly') m.tip = 'Lavud ✓ no fabric!';
+else m.tip = m.height + ' tefachim ✓';
+});
+
+const ROOF_MATS = [
+{ id:'bambooPoles', name:'Bamboo Poles', emoji:'🎍', density:0.75, kosher:true, color:0xd9b877, tex:'poles' },
+{ id:'pine', name:'Pine Branches', emoji:'🌿', density:0.85, kosher:true, color:0x4e8a3c, tex:'pine' },
+{ id:'slats', name:'Wooden Slats', emoji:'🪵', density:0.95, kosher:true, color:0xa9764a, tex:'slats' },
+{ id:'palm', name:'Palm Fronds', emoji:'🌴', density:0.80, kosher:true, color:0x5da04a, tex:'palm' },
+{ id:'metal', name:'Metal Sheet', emoji:'⬜', density:1.00, kosher:false, color:0x9aa4ad, tex:'metal' },
+{ id:'tarp', name:'Plastic Tarp', emoji:'🟦', density:1.00, kosher:false, color:0x3a7bd5, tex:'tarp' }
+];
+ROOF_MATS.forEach(m => m.tip = m.kosher ? ('Kosher ✓ ' + Math.round(m.density*100) + '% shade') : 'Not a plant ✗');
+
+const DECOR = [
+{ id:'lights', name:'Fairy Lights', emoji:'✨', tip:'Sparkly!' },
+{ id:'chain', name:'Paper Chains', emoji:'🎏', tip:'Colorful!' },
+{ id:'fruit', name:'Fruit Garland', emoji:'🍇', tip:'Yummy!' },
+{ id:'ushpizin', name:'Ushpizin Signs', emoji:'🖼️', tip:'Welcome guests!' }
+];
+
+const WALL_HEIGHTS = [10, 12, 15, 18, 20];
+
+/* ---------------- GLOBAL PROGRESS ---------------- */
+const levelSaves = {};
+const completedLevels = new Set();
+const seenIntros = new Set();
+let maxUnlocked = 0;
+
+/* ---------------- THREE.JS SETUP ---------------- */
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, powerPreference:'high-performance' });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0xcfe9f7, 80, 190);
+
+const camera = new THREE.PerspectiveCamera(52, 1, 0.1, 600);
+
+function resize(){
+const w = window.innerWidth, h = window.innerHeight;
+renderer.setSize(w, h, false);
+camera.aspect = w / h;
+camera.updateProjectionMatrix();
+}
+
+(function sky(){
+const c = document.createElement('canvas');
+c.width = 8; c.height = 256;
+const g = c.getContext('2d');
+const grd = g.createLinearGradient(0,0,0,256);
+grd.addColorStop(0.00, '#2f83c9');
+grd.addColorStop(0.35, '#7dc4ec');
+grd.addColorStop(0.70, '#bfe6fa');
+grd.addColorStop(1.00, '#eaf7ff');
+g.fillStyle = grd; g.fillRect(0,0,8,256);
+const tex = new THREE.CanvasTexture(c);
+scene.add(new THREE.Mesh(
+new THREE.SphereGeometry(260, 24, 16),
+new THREE.MeshBasicMaterial({ map:tex, side:THREE.BackSide, fog:false, depthWrite:false })
+));
+})();
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0x6f9550, 0.85));
+
+const sun = new THREE.DirectionalLight(0xfff3d6, 0.95);
+sun.position.set(11, 19, 9);
+sun.castShadow = true;
+sun.shadow.mapSize.width = 1024;
+sun.shadow.mapSize.height = 1024;
+const sc = sun.shadow.camera;
+sc.left = -16; sc.right = 16; sc.top = 16; sc.bottom = -16; sc.near = 1; sc.far = 70;
+sun.shadow.bias = -0.0016;
+scene.add(sun);
+scene.add(sun.target);
+
+const ground = new THREE.Mesh(
+new THREE.PlaneGeometry(400, 400),
+new THREE.MeshLambertMaterial({ color:0x8ec46a })
+);
+ground.rotation.x = -Math.PI/2;
+ground.receiveShadow = true;
+scene.add(ground);
+
+(function makeTrees(){
+const trunkMat = new THREE.MeshLambertMaterial({ color:0x6b4a2f });
+const leafMats = [
+new THREE.MeshLambertMaterial({ color:0x4f8f3a }),
+new THREE.MeshLambertMaterial({ color:0x5ea845 }),
+new THREE.MeshLambertMaterial({ color:0x3f7d31 })
+];
+const spots = [
+[-11,-6,1.5],[-13,4,1.2],[12,-8,1.4],[14,3,1.1],
+[-8,12,1.0],[7,13,1.3],[-16,-14,1.6],[17,-15,1.2],
+[4,-16,1.0],[-6,-15,0.9],[20,8,1.3],[-21,6,1.2]
+];
+spots.forEach(([x,z,s])=>{
+const g = new THREE.Group();
+const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.13*s,0.19*s,1.3*s,7), trunkMat);
+trunk.position.y = 0.65*s; trunk.castShadow = true;
+g.add(trunk);
+const lm = leafMats[Math.floor(Math.random()*leafMats.length)];
+for(let i=0;i<3;i++){
+const b = new THREE.Mesh(new THREE.SphereGeometry((0.78 - i*0.16)*s, 8, 6), lm);
+b.position.set((Math.random()-0.5)*0.5*s, (1.35 + i*0.55)*s, (Math.random()-0.5)*0.5*s);
+b.castShadow = true;
+g.add(b);
+}
+g.position.set(x,0,z);
+scene.add(g);
+});
+})();
+
+/* =========================================================
+BACKGROUND ANIMALS — cows, goats, sheep & camels
+========================================================= */
+const animals = [];
+
+const ANIMAL_PRESETS = {
+cow:   { body:0xf2eee3, dark:0x3a352f, legColor:0xe4ddcd, horn:0xd9cba8,
+         legH:0.62, legR:0.075, len:1.15, hgt:0.66, wid:0.62, neckLen:0.30, neckTilt:0.30,
+         headL:0.36, headH:0.30, headW:0.30, horns:'curved', wool:false, hump:false },
+goat:  { body:0xd7c6a3, dark:0x8a7256, legColor:0xc4b18c, horn:0x6f5c45,
+         legH:0.50, legR:0.052, len:0.85, hgt:0.48, wid:0.44, neckLen:0.28, neckTilt:0.42,
+         headL:0.28, headH:0.24, headW:0.22, horns:'straight', wool:false, hump:false },
+sheep: { body:0xf8f5ee, dark:0xbfb3a0, legColor:0x8f8577, horn:0xc9b48c,
+         legH:0.46, legR:0.052, len:0.85, hgt:0.50, wid:0.48, neckLen:0.24, neckTilt:0.34,
+         headL:0.26, headH:0.24, headW:0.22, horns:'curl', wool:true, hump:false },
+camel: { body:0xd2a469, dark:0xa8813f, legColor:0xc79a5c, horn:0xbf9256,
+         legH:1.05, legR:0.075, len:1.25, hgt:0.62, wid:0.58, neckLen:0.85, neckTilt:0.16,
+         headL:0.38, headH:0.26, headW:0.24, horns:'none', wool:false, hump:true }
+};
+
+function buildAnimal(kind){
+const P = ANIMAL_PRESETS[kind];
+const g = new THREE.Group();
+
+const bodyMat = new THREE.MeshLambertMaterial({ color: P.body });
+const darkMat = new THREE.MeshLambertMaterial({ color: P.dark });
+const legMat  = new THREE.MeshLambertMaterial({ color: P.legColor });
+const hornMat = new THREE.MeshLambertMaterial({ color: P.horn });
+
+const legH = P.legH, hgt = P.hgt;
+
+const body = new THREE.Mesh(new THREE.BoxGeometry(P.len, hgt, P.wid), bodyMat);
+body.position.y = legH + hgt/2;
+body.castShadow = true;
+g.add(body);
+
+if(kind === 'cow'){
+[[0.22,0.72,0.10],[-0.28,0.52,-0.05],[0.04,0.38,0.20]].forEach(([x,yf,z])=>{
+const spot = new THREE.Mesh(new THREE.BoxGeometry(P.len*0.32, hgt*0.36, P.wid*1.05), darkMat);
+spot.position.set(x*P.len, legH + hgt*yf, z*P.wid);
+g.add(spot);
+});
+}
+
+if(P.wool){
+for(let i=0;i<7;i++){
+const s = new THREE.Mesh(new THREE.SphereGeometry(hgt*0.44, 7, 6), bodyMat);
+s.position.set((Math.random()-0.5)*P.len*0.85,
+               legH + hgt*0.92 + Math.random()*0.07,
+               (Math.random()-0.5)*P.wid*0.85);
+s.castShadow = true;
+g.add(s);
+}
+}
+
+if(P.hump){
+const h = new THREE.Mesh(new THREE.SphereGeometry(hgt*0.52, 10, 8), bodyMat);
+h.scale.set(1.15, 0.9, 0.9);
+h.position.set(-P.len*0.05, legH + hgt*0.94, 0);
+h.castShadow = true;
+g.add(h);
+}
+
+const legs = [];
+const lx = P.len*0.34, lz = P.wid*0.36;
+[[-lx,-lz],[lx,-lz],[-lx,lz],[lx,lz]].forEach(([x,z],i)=>{
+const hip = new THREE.Group();
+hip.position.set(x, legH, z);
+hip.userData.phase = (i === 0 || i === 3) ? 0 : Math.PI;
+const leg = new THREE.Mesh(new THREE.CylinderGeometry(P.legR, P.legR*0.85, legH, 6), legMat);
+leg.position.y = -legH/2;
+leg.castShadow = true;
+hip.add(leg);
+g.add(hip);
+legs.push(hip);
+});
+
+const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.012, legH*0.8, 5), legMat);
+tail.position.set(-P.len*0.52, legH + hgt*0.55, 0);
+tail.rotation.z = 0.5;
+g.add(tail);
+
+const neckGrp = new THREE.Group();
+neckGrp.position.set(P.len*0.44, legH + hgt*0.60, 0);
+neckGrp.rotation.z = -P.neckTilt;
+
+const neck = new THREE.Mesh(new THREE.BoxGeometry(P.wid*0.44, P.neckLen, P.wid*0.44), bodyMat);
+neck.position.y = P.neckLen/2;
+neck.castShadow = true;
+neckGrp.add(neck);
+
+const headGrp = new THREE.Group();
+headGrp.position.y = P.neckLen + P.headH*0.35;
+
+const head = new THREE.Mesh(new THREE.BoxGeometry(P.headL, P.headH, P.headW), bodyMat);
+head.position.x = P.headL*0.32;
+head.castShadow = true;
+headGrp.add(head);
+
+const snout = new THREE.Mesh(
+new THREE.BoxGeometry(P.headL*0.55, P.headH*0.62, P.headW*0.74), darkMat);
+snout.position.set(P.headL*0.82, -P.headH*0.14, 0);
+headGrp.add(snout);
+
+[-1,1].forEach(s=>{
+const ear = new THREE.Mesh(new THREE.BoxGeometry(P.headL*0.34, P.headH*0.5, 0.035), bodyMat);
+ear.position.set(-P.headL*0.06, P.headH*0.36, s*P.headW*0.62);
+ear.rotation.z = 0.55;
+ear.rotation.x = s * 0.55;
+headGrp.add(ear);
+});
+
+if(P.horns === 'straight'){
+[-1,1].forEach(s=>{
+const h = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.032, P.headH*1.25, 5), hornMat);
+h.position.set(0.02, P.headH*0.86, s*P.headW*0.28);
+h.rotation.x = s * 0.38;
+h.rotation.z = -0.22;
+headGrp.add(h);
+});
+} else if(P.horns === 'curl'){
+[-1,1].forEach(s=>{
+const h = new THREE.Mesh(new THREE.TorusGeometry(P.headH*0.40, 0.026, 5, 9, Math.PI*1.45), hornMat);
+h.position.set(-0.02, P.headH*0.22, s*P.headW*0.58);
+h.rotation.y = Math.PI/2;
+headGrp.add(h);
+});
+} else if(P.horns === 'curved'){
+[-1,1].forEach(s=>{
+const h = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.036, P.headH*1.0, 5), hornMat);
+h.position.set(-0.02, P.headH*0.80, s*P.headW*0.42);
+h.rotation.x = s * 0.95;
+h.rotation.z = 0.32;
+headGrp.add(h);
+});
+}
+
+neckGrp.add(headGrp);
+g.add(neckGrp);
+
+g.userData.legs = legs;
+g.userData.headGrp = headGrp;
+g.userData.neckTilt = P.neckTilt;
+return g;
+}
+
+function spawnAnimals(){
+const kinds = ['cow','sheep','goat','camel','sheep','goat','cow'];
+kinds.forEach((k, i)=>{
+const mesh = buildAnimal(k);
+const s = 0.85 + Math.random()*0.35;
+mesh.scale.setScalar(s);
+
+const r = 9 + Math.random()*8;
+const cMag = Math.random() * Math.max(0, r - 6.5);
+const cAng = Math.random() * Math.PI * 2;
+const orbit = {
+cx: Math.cos(cAng) * cMag,
+cz: Math.sin(cAng) * cMag,
+r: r,
+a: Math.random() * Math.PI * 2,
+speed: (0.05 + Math.random()*0.07) * (i % 2 ? 1 : -1)
+};
+
+scene.add(mesh);
+animals.push({
+mesh,
+orbit,
+legs: mesh.userData.legs,
+head: mesh.userData.headGrp,
+neckTilt: mesh.userData.neckTilt,
+t: Math.random()*20,
+gait: 0.85 + Math.random()*0.5
+});
+});
+}
+
+function updateAnimals(dt){
+for(let i=0;i<animals.length;i++){
+const a = animals[i];
+a.t += dt;
+a.orbit.a += a.orbit.speed * dt;
+
+const ang = a.orbit.a;
+const x = a.orbit.cx + Math.cos(ang) * a.orbit.r;
+const z = a.orbit.cz + Math.sin(ang) * a.orbit.r;
+
+const dirSign = a.orbit.speed >= 0 ? 1 : -1;
+const dx = -Math.sin(ang) * dirSign;
+const dz =  Math.cos(ang) * dirSign;
+
+const w = a.t * 5.2 * a.gait;
+
+a.mesh.position.set(x, Math.abs(Math.sin(w)) * 0.035, z);
+a.mesh.rotation.y = Math.atan2(-dz, dx);
+
+for(let l=0; l<a.legs.length; l++){
+const hip = a.legs[l];
+hip.rotation.x = Math.sin(w + hip.userData.phase) * 0.50;
+}
+
+if(a.head){
+a.head.rotation.z = Math.sin(w * 0.5) * 0.09;
+a.head.rotation.y = Math.sin(a.t * 0.7) * 0.13;
+}
+}
+}
+
+/* ---------------- TEXTURE HELPERS ---------------- */
+function shadeHex(hex, amt){
+const r = clamp(((hex>>16)&255)+amt, 0, 255);
+const g = clamp(((hex>>8)&255)+amt, 0, 255);
+const b = clamp((hex&255)+amt, 0, 255);
+return `rgb(${r|0},${g|0},${b|0})`;
+}
+
+const texCache = {};
+function wallTexture(kind, color){
+const key = 'wt_' + kind + '_' + color;
+if(texCache[key]) return texCache[key];
+const S = 64;
+const c = document.createElement('canvas');
+c.width = c.height = S;
+const g = c.getContext('2d');
+
+const dark = shadeHex(color, -42);
+const dark2 = shadeHex(color, -70);
+const light = shadeHex(color, 26);
+
+if(kind === 'strapsOnly'){
+g.clearRect(0,0,S,S);
+const bandH = 6;
+const gapH = 7;
+for(let y=0; y<S; y+=bandH+gapH){
+g.fillStyle = dark;
+g.fillRect(0, y, S, bandH);
+g.fillStyle = shadeHex(color, 30);
+g.fillRect(0, y+1, S, 2);
+g.fillStyle = dark2;
+g.fillRect(0, y+bandH-2, S, 2);
+}
+const t = new THREE.CanvasTexture(c);
+t.wrapS = t.wrapT = THREE.RepeatWrapping;
+texCache[key] = t;
+return t;
+}
+
+g.fillStyle = shadeHex(color, 0);
+g.fillRect(0,0,S,S);
+
+if(kind === 'bamboo'){
+for(let i=0;i<8;i++){
+g.fillStyle = i%2 ? dark : light;
+g.fillRect(i*8, 0, 4, S);
+}
+g.fillStyle = dark2;
+for(let y=0;y<S;y+=16) g.fillRect(0,y,S,1.5);
+} else if(kind === 'wood'){
+for(let i=0;i<4;i++){
+g.fillStyle = i%2 ? dark : light;
+g.fillRect(0, i*16, S, 13);
+}
+g.fillStyle = dark2;
+for(let i=0;i<7;i++){
+g.fillRect(Math.random()*S, Math.random()*S, 10+Math.random()*16, 1);
+}
+} else if(kind === 'brick'){
+g.fillStyle = dark2;
+for(let r=0;r<5;r++){
+for(let cc=0;cc<5;cc++){
+const off = (r%2)*8;
+g.fillStyle = (r+cc)%2 ? dark : light;
+g.fillRect(cc*16 + off - 4, r*14, 14, 12);
+}
+}
+} else if(kind === 'canvas'){
+for(let i=0;i<220;i++){
+g.fillStyle = Math.random() > 0.5 ? dark : light;
+g.globalAlpha = 0.16;
+g.fillRect(Math.random()*S, Math.random()*S, 3, 1);
+}
+g.globalAlpha = 1;
+g.fillStyle = dark2;
+for(let y=0;y<S;y+=16) g.fillRect(0,y,S,1);
+} else if(kind === 'fence'){
+g.fillStyle = dark2;
+g.fillRect(0,0,S,S);
+g.fillStyle = light;
+for(let i=0;i<4;i++) g.fillRect(i*16+2, 4, 11, S-8);
+g.fillStyle = dark;
+g.fillRect(0, 12, S, 4);
+g.fillRect(0, 40, S, 4);
+} else if(kind === 'wire'){
+g.fillStyle = shadeHex(color, 10);
+g.fillRect(0,0,S,S);
+g.strokeStyle = shadeHex(color, -55);
+g.lineWidth = 1.5;
+for(let i=0;i<=S;i+=8){
+g.beginPath(); g.moveTo(i,0); g.lineTo(i,S); g.stroke();
+g.beginPath(); g.moveTo(0,i); g.lineTo(S,i); g.stroke();
+}
+} else if(kind === 'fabricLoose'){
+g.fillStyle = shadeHex(color, 0);
+g.fillRect(0,0,S,S);
+for(let x=0; x<S; x+=7){
+g.fillStyle = (x/7|0)%2 ? dark : light;
+g.globalAlpha = 0.40;
+g.fillRect(x, 0, 3, S);
+}
+g.globalAlpha = 1;
+g.strokeStyle = dark2;
+g.lineWidth = 1.2;
+for(let y=0; y<S; y+=10){
+g.beginPath();
+for(let x=0; x<=S; x+=3){
+const yy = y + Math.sin(x*0.35 + y*0.15) * 2.2;
+if(x === 0) g.moveTo(x, yy);
+else g.lineTo(x, yy);
+}
+g.stroke();
+}
+} else if(kind === 'fabricStraps'){
+g.fillStyle = shadeHex(color, 0);
+g.fillRect(0,0,S,S);
+for(let x=0; x<S; x+=6){
+g.fillStyle = (x/6|0)%2 ? dark : light;
+g.globalAlpha = 0.32;
+g.fillRect(x, 0, 2, S);
+}
+g.globalAlpha = 1;
+g.strokeStyle = dark2;
+g.lineWidth = 1;
+for(let y=0; y<S; y+=9){
+g.beginPath();
+for(let x=0; x<=S; x+=3){
+const yy = y + Math.sin(x*0.35 + y*0.15) * 1.6;
+if(x === 0) g.moveTo(x, yy);
+else g.lineTo(x, yy);
+}
+g.stroke();
+}
+const strapColor = shadeHex(0x5a3a6a, 0);
+for(let i=0;i<5;i++){
+const sy = i * 12.8;
+g.fillStyle = shadeHex(color, -80);
+g.fillRect(0, sy, S, 6);
+g.fillStyle = strapColor;
+g.fillRect(0, sy+1, S, 4);
+g.fillStyle = shadeHex(0x8b6a9c, 20);
+g.fillRect(0, sy+2, S, 1);
+}
+}
+
+const t = new THREE.CanvasTexture(c);
+t.wrapS = t.wrapT = THREE.RepeatWrapping;
+texCache[key] = t;
+return t;
+}
+
+function roofTexture(kind, color){
+const key = 'rt_' + kind + '_' + color;
+if(texCache[key]) return texCache[key];
+const S = 64;
+const c = document.createElement('canvas');
+c.width = c.height = S;
+const g = c.getContext('2d');
+g.fillStyle = shadeHex(color, 0);
+g.fillRect(0,0,S,S);
+const dark = shadeHex(color, -38);
+const light = shadeHex(color, 28);
+
+if(kind === 'poles'){
+for(let i=0;i<6;i++){
+g.fillStyle = i%2 ? dark : light;
+g.fillRect(i*11+1, 0, 8, S);
+}
+g.fillStyle = shadeHex(color,-70);
+for(let i=0;i<6;i++) g.fillRect(i*11+9, 0, 2, S);
+} else if(kind === 'pine'){
+for(let i=0;i<170;i++){
+g.fillStyle = Math.random()>0.5 ? dark : light;
+g.globalAlpha = 0.75;
+const r = 2 + Math.random()*4;
+g.beginPath(); g.arc(Math.random()*S, Math.random()*S, r, 0, 7); g.fill();
+}
+g.globalAlpha = 1;
+} else if(kind === 'slats'){
+for(let i=0;i<4;i++){
+g.fillStyle = i%2 ? dark : light;
+g.fillRect(0, i*16+1, S, 13);
+}
+g.fillStyle = shadeHex(color,-70);
+for(let i=0;i<4;i++) g.fillRect(0, i*16+14, S, 2);
+} else if(kind === 'palm'){
+for(let i=-8;i<16;i++){
+g.strokeStyle = i%2 ? dark : light;
+g.lineWidth = 5;
+g.beginPath();
+g.moveTo(i*10, 0); g.lineTo(i*10 + 40, S);
+g.stroke();
+}
+} else if(kind === 'metal'){
+const grd = g.createLinearGradient(0,0,S,S);
+grd.addColorStop(0, light);
+grd.addColorStop(1, dark);
+g.fillStyle = grd; g.fillRect(0,0,S,S);
+g.strokeStyle = shadeHex(color,-60); g.lineWidth = 2;
+for(let i=0;i<S;i+=16){ g.beginPath(); g.moveTo(i,0); g.lineTo(i,S); g.stroke(); }
+} else {
+for(let i=0;i<120;i++){
+g.fillStyle = Math.random()>0.5 ? dark : light;
+g.globalAlpha = 0.25;
+g.fillRect(Math.random()*S, Math.random()*S, 8, 8);
+}
+g.globalAlpha = 1;
+}
+const t = new THREE.CanvasTexture(c);
+t.wrapS = t.wrapT = THREE.RepeatWrapping;
+texCache[key] = t;
+return t;
+}
+
+/* ---------------- GAME STATE ---------------- */
+let levelIndex = 0;
+let buildGroup = null;
+let previewGroup = null;
+let state = null;
+let levelComplete = false;
+let previewMode = false;
+let suppressSideEffects = false;
+
+const anims = [];
+const confetti = [];
+
+const view = { theta:0.85, phi:1.02, radius:12, target:new THREE.Vector3(0,1.1,0) };
+const desired = { theta:0.85, phi:1.02, radius:12, target:new THREE.Vector3(0,1.1,0) };
+let viewInitialised = false;
+
+/* ---------------- DOM ---------------- */
+const $ = id => document.getElementById(id);
+const levelNumEl = $('levelNum');
+const levelNameEl = $('levelName');
+const levelSubEl = $('levelSub');
+const goalListEl = $('goalList');
+const goalCountEl = $('goalCount');
+const goalPanelEl = $('goalPanel');
+const sukkahInfoEl = $('sukkahInfo');
+const itemsEl = $('items');
+const hintEl = $('hint');
+const tabsEl = $('tabs');
+const modalEl = $('modal');
+const modalTitleEl = $('modalTitle');
+const modalBodyEl = $('modalBody');
+const modalBtnEl = $('modalBtn');
+const modalBtn2El = $('modalBtn2');
+const modalEyebrow = $('modalEyebrow');
+const previewBarEl = $('previewBar');
+const uiEl = $('ui');
+const heightRowEl = $('heightRow');
+const heightChipsEl= $('heightChips');
+const completeBannerEl = $('completeBanner');
+const cbTextEl = $('cbText');
+const cbNextEl = $('cbNext');
+const navProgressEl= $('navProgress');
+const btnPrevEl = $('btnPrev');
+const btnNextEl = $('btnNext');
+
+/* ---------------- SHARED GHOST MATERIALS ----------------
+   __shared = true → disposeGroup() will never dispose them.   */
+const ghostWallMat = new THREE.MeshBasicMaterial({ color:0xffffff, transparent:true, opacity:0.16, depthWrite:false, side:THREE.DoubleSide });
+const ghostRoofMat = new THREE.MeshBasicMaterial({ color:0xffe9a8, transparent:true, opacity:0.20, depthWrite:false, side:THREE.DoubleSide });
+const ghostTreeMat = new THREE.MeshBasicMaterial({ color:0x9be07a, transparent:true, opacity:0.30, depthWrite:false, side:THREE.DoubleSide });
+const ghostDecorMat = new THREE.MeshBasicMaterial({ color:0xffd166, transparent:true, opacity:0.40, depthWrite:false });
+ghostWallMat.__shared = true;
+ghostRoofMat.__shared = true;
+ghostTreeMat.__shared = true;
+ghostDecorMat.__shared = true;
+ghostWallMat.userData = { base: 1 };
+ghostRoofMat.userData = { base: 1 };
+ghostTreeMat.userData = { base: 1 };
+ghostDecorMat.userData = { base: 1 };
+
+/* =========================================================
+LEVEL BUILDING
+========================================================= */
+function disposeGroup(grp){
+grp.traverse(o=>{
+if(o.geometry) o.geometry.dispose();
+if(o.material){
+const arr = Array.isArray(o.material) ? o.material : [o.material];
+arr.forEach(m=>{ if(m.dispose && !m.__shared) m.dispose(); });
+}
+});
+}
+
+/* ghosts must not be hit once their slot is filled */
+const NO_RAY = function(){};
+function disableGhostRay(g){ if(g) g.raycast = NO_RAY; }
+function enableGhostRay(g){ if(g) g.raycast = THREE.Mesh.prototype.raycast; }
+
+function loadLevel(idx, skipSave){
+if(!skipSave && state) saveCurrentLevel();
+levelIndex = clamp(idx, 0, LEVELS.length - 1);
+const L = LEVELS[levelIndex];
+
+hideCompleteBanner();
+
+if(buildGroup){
+scene.remove(buildGroup);
+disposeGroup(buildGroup);
+}
+buildGroup = new THREE.Group();
+scene.add(buildGroup);
+
+const savedHeight = (levelSaves[levelIndex] && levelSaves[levelIndex].wallHeight) || 10;
+
+state = {
+L,
+levelIndex,
+wallSides: [],
+roofTiles: [],
+decorSlots: [],
+cat: 'walls',
+selWall: 'bamboo',
+selRoof: 'bambooPoles',
+selDecor: 'lights',
+wallHeight: savedHeight,
+treeGroup: null,
+viewRadius: 6 + Math.max(L.w, L.d) * 2.0
+};
+
+createPlot(L);
+createWalls(L);
+createRoof(L);
+createDecor(L);
+createTreeCanopy(L);
+buildPreviewModel(L);
+
+suppressSideEffects = true;
+restoreSave(levelIndex);
+suppressSideEffects = false;
+
+levelNumEl.textContent = 'LEVEL ' + (levelIndex + 1);
+levelNameEl.textContent = L.name;
+levelSubEl.textContent = L.sub;
+
+desired.target.set(0, 1.1, 0);
+desired.radius = state.viewRadius;
+desired.phi = 1.02;
+desired.theta = 0.85;
+if(!viewInitialised){
+view.theta = desired.theta; view.phi = desired.phi;
+view.radius = desired.radius; view.target.copy(desired.target);
+viewInitialised = true;
+}
+
+levelComplete = false;
+
+/* always start on the Walls tab with default picks */
+setActiveTab('walls');
+
+updateHeightRow();
+updateGhostHeights();
+applyCategoryTransparency();
+refreshGoals();
+updateNav();
+
+if(L.intro && !seenIntros.has(levelIndex)){
+seenIntros.add(levelIndex);
+setTimeout(()=>{
+showModal(L.intro.eyebrow || '✨ NEW CONCEPT', L.intro.title, L.intro.body, 'Got it! Let\'s build!');
+}, 400);
+} else {
+setTimeout(()=>{
+if(!completedLevels.has(levelIndex)){
+showHint('📖 ' + L.tip, 4400);
+} else {
+showHint('✅ You already built this one! Look around or edit it.', 3200);
+}
+}, 500);
+}
+}
+
+/* ---------- PLOT ---------- */
+function createPlot(L){
+const pw = L.w * CELL + 1.0;
+const pd = L.d * CELL + 1.0;
+const plot = new THREE.Mesh(
+new THREE.PlaneGeometry(pw, pd),
+new THREE.MeshLambertMaterial({ color:0xe8d9b5 })
+);
+plot.rotation.x = -Math.PI/2;
+plot.position.y = 0.02;
+plot.receiveShadow = true;
+buildGroup.add(plot);
+
+const pegMat = new THREE.MeshLambertMaterial({ color:0xc9b48a });
+const hw = L.w*CELL/2 + 0.45, hd = L.d*CELL/2 + 0.45;
+[[-hw,-hd],[hw,-hd],[-hw,hd],[hw,hd]].forEach(([x,z])=>{
+const p = new THREE.Mesh(new THREE.CylinderGeometry(0.045,0.045,0.22,6), pegMat);
+p.position.set(x, 0.11, z);
+p.castShadow = true;
+buildGroup.add(p);
+});
+}
+
+/* ---------- WALLS ---------- */
+function createWalls(L){
+const w = L.w, d = L.d;
+const hw = w * CELL / 2;
+const hd = d * CELL / 2;
+
+const defs = [
+{ n:w, fx:(i)=>({ x:(-w/2 + i + 0.5) * CELL, z:-hd }), ry:0 },
+{ n:w, fx:(i)=>({ x:(-w/2 + i + 0.5) * CELL, z: hd }), ry:0 },
+{ n:d, fx:(i)=>({ x:-hw, z:(-d/2 + i + 0.5) * CELL }), ry:Math.PI/2 },
+{ n:d, fx:(i)=>({ x: hw, z:(-d/2 + i + 0.5) * CELL }), ry:Math.PI/2 }
+];
+
+state.wallSides = defs.map((sd, si)=>{
+const slots = [];
+for(let i=0;i<sd.n;i++){
+const p = sd.fx(i);
+
+const gGeo = new THREE.BoxGeometry(CELL*0.94, WALL_H, 0.09);
+gGeo.translate(0, WALL_H/2, 0);
+
+const ghost = new THREE.Mesh(gGeo, ghostWallMat);
+ghost.position.set(p.x, 0, p.z);
+ghost.rotation.y = sd.ry;
+ghost.userData = { kind:'wall', side:si, slot:i };
+buildGroup.add(ghost);
+
+const edges = new THREE.LineSegments(
+new THREE.EdgesGeometry(gGeo),
+new THREE.LineBasicMaterial({ color:0xffffff, transparent:true, opacity:0.75 })
+);
+edges.raycast = NO_RAY;
+ghost.add(edges);
+
+slots.push({ side:si, i, pos:p, ry:sd.ry, ghost, built:null, matId:null, heightTef:10 });
+}
+return { slots };
+});
+}
+
+function currentWallHeightTef(){
+if(!state) return 10;
+const def = WALLS.find(m=>m.id===state.selWall);
+if(!def) return 10;
+return def.valid ? state.wallHeight : def.height;
+}
+
+function updateGhostHeights(){
+if(!state || !state.wallSides) return;
+const hTef = currentWallHeightTef();
+const scale = hTef / 10;
+state.wallSides.forEach(side=>{
+side.slots.forEach(sl=>{
+if(sl.ghost && !sl.built) sl.ghost.scale.y = scale;
+});
+});
+}
+
+function placeWall(slot, matId, heightTef, silent){
+const def = WALLS.find(m=>m.id===matId);
+if(!def || slot.built) return;
+
+const hTef = def.valid ? (heightTef || state.wallHeight || 10) : def.height;
+const h = hTef * TEFACH;
+
+const geo = new THREE.BoxGeometry(CELL*0.94, h, 0.11);
+geo.translate(0, h/2, 0);
+
+const isStrapsOnly = def.tex === 'strapsOnly';
+const mat = new THREE.MeshLambertMaterial({
+map: wallTexture(def.tex, def.color),
+transparent: !def.valid && !isStrapsOnly,
+opacity: !def.valid ? 0.82 : 1,
+alphaTest: isStrapsOnly ? 0.5 : 0,
+side: THREE.DoubleSide
+});
+mat.userData.origOpacity = mat.opacity;
+mat.userData.origTransparent = mat.transparent;
+mat.userData.origDepthWrite = mat.depthWrite;
+
+const mesh = new THREE.Mesh(geo, mat);
+mesh.position.set(slot.pos.x, 0, slot.pos.z);
+mesh.rotation.y = slot.ry;
+mesh.castShadow = true;
+mesh.receiveShadow = true;
+mesh.userData = { kind:'wall', side:slot.side, slot:slot.i };
+buildGroup.add(mesh);
+
+slot.built = mesh;
+slot.matId = matId;
+slot.heightTef = hTef;
+
+/* hide AND de-ray the ghost so taps can never hit it again */
+slot.ghost.visible = false;
+disableGhostRay(slot.ghost);
+
+if(!silent && !suppressSideEffects){
+popIn(mesh);
+afterChange();
+}
+}
+
+function removeWall(slot){
+if(!slot.built) return;
+buildGroup.remove(slot.built);
+slot.built.geometry.dispose();
+slot.built.material.dispose();
+slot.built = null;
+slot.matId = null;
+slot.ghost.visible = true;
+enableGhostRay(slot.ghost);
+afterChange();
+}
+
+/* ---------- ROOF ---------- */
+function createRoof(L){
+state.roofTiles = [];
+const w = L.w, d = L.d;
+const treeRows = (L.tree && L.tree.rows) ? L.tree.rows : 0;
+
+for(let i=0;i<w;i++){
+for(let j=0;j<d;j++){
+const x = (-w/2 + i + 0.5) * CELL;
+const z = (-d/2 + j + 0.5) * CELL;
+
+const underTree = j < treeRows;
+
+const geo = new THREE.BoxGeometry(CELL*0.92, 0.10, CELL*0.92);
+const ghost = new THREE.Mesh(geo, underTree ? ghostTreeMat : ghostRoofMat);
+ghost.position.set(x, ROOF_Y, z);
+ghost.userData = { kind:'roof', idx: state.roofTiles.length };
+buildGroup.add(ghost);
+
+const edges = new THREE.LineSegments(
+new THREE.EdgesGeometry(geo),
+new THREE.LineBasicMaterial({
+color: underTree ? 0x74c24a : 0xffd166,
+transparent:true, opacity:0.7
+})
+);
+edges.raycast = NO_RAY;
+ghost.add(edges);
+
+state.roofTiles.push({ x, z, ghost, built:null, matId:null, underTree });
+}
+}
+}
+
+function placeRoof(tile, matId, silent){
+if(tile.built) return;
+const def = ROOF_MATS.find(m=>m.id===matId);
+if(!def) return;
+
+const geo = new THREE.BoxGeometry(CELL*0.92, 0.11, CELL*0.92);
+const mat = new THREE.MeshLambertMaterial({ map: roofTexture(def.tex, def.color) });
+mat.userData.origOpacity = mat.opacity;
+mat.userData.origTransparent = mat.transparent;
+mat.userData.origDepthWrite = mat.depthWrite;
+
+const mesh = new THREE.Mesh(geo, mat);
+mesh.position.set(tile.x, ROOF_Y, tile.z);
+mesh.castShadow = true;
+mesh.receiveShadow = true;
+mesh.userData = { kind:'roof', idx: state.roofTiles.indexOf(tile) };
+buildGroup.add(mesh);
+
+tile.built = mesh;
+tile.matId = matId;
+tile.ghost.visible = false;
+disableGhostRay(tile.ghost);
+
+if(!silent && !suppressSideEffects){
+popIn(mesh);
+afterChange();
+}
+}
+
+function removeRoof(tile){
+if(!tile.built) return;
+buildGroup.remove(tile.built);
+tile.built.geometry.dispose();
+tile.built.material.dispose();
+tile.built = null;
+tile.matId = null;
+tile.ghost.visible = true;
+enableGhostRay(tile.ghost);
+afterChange();
+}
+
+/* ---------- DECOR ---------- */
+function createDecor(L){
+const hw = L.w * CELL / 2;
+const hd = L.d * CELL / 2;
+
+const spots = [
+{ x: 0, z: -hd + 0.30 },
+{ x: 0, z: hd - 0.30 },
+{ x: -hw + 0.30, z: 0 },
+{ x: hw - 0.30, z: 0 }
+];
+
+state.decorSlots = spots.map((p, i)=>{
+const geo = new THREE.SphereGeometry(0.14, 12, 10);
+const ghost = new THREE.Mesh(geo, ghostDecorMat);
+ghost.position.set(p.x, ROOF_Y - 0.22, p.z);
+ghost.userData = { kind:'decor', idx:i };
+buildGroup.add(ghost);
+return { x:p.x, z:p.z, ghost, built:null, matId:null, phase: Math.random()*Math.PI*2 };
+});
+}
+
+function placeDecor(slot, id, silent){
+if(slot.built) return;
+const mesh = makeDecorMesh(id);
+mesh.position.set(slot.x, ROOF_Y - 0.28, slot.z);
+mesh.userData = { kind:'decor', idx: state.decorSlots.indexOf(slot) };
+mesh.traverse(o=>{ if(o.isMesh){ o.castShadow = true; } });
+buildGroup.add(mesh);
+slot.built = mesh;
+slot.matId = id;
+slot.ghost.visible = false;
+disableGhostRay(slot.ghost);
+
+if(!silent && !suppressSideEffects){
+popIn(mesh);
+afterChange();
+}
+}
+
+function removeDecor(slot){
+if(!slot.built) return;
+buildGroup.remove(slot.built);
+disposeGroup(slot.built);
+slot.built = null;
+slot.matId = null;
+slot.ghost.visible = true;
+enableGhostRay(slot.ghost);
+afterChange();
+}
+
+function makeDecorMesh(id){
+const g = new THREE.Group();
+const m = (c, geo) => new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color:c }));
+
+if(id === 'lights'){
+for(let i=0;i<6;i++){
+const b = new THREE.Mesh(
+new THREE.SphereGeometry(0.055, 7, 6),
+new THREE.MeshBasicMaterial({ color: i%2 ? 0xffd166 : 0xff8fb1 })
+);
+b.position.set(-0.28 + i*0.112, 0, 0);
+g.add(b);
+}
+} else if(id === 'chain'){
+const cols = [0xff6b9d, 0x4ecdc4, 0xffd166, 0xa78bfa, 0x74d680];
+for(let i=0;i<5;i++){
+const t = new THREE.Mesh(
+new THREE.TorusGeometry(0.07, 0.022, 6, 12),
+new THREE.MeshLambertMaterial({ color: cols[i] })
+);
+t.position.set(-0.24 + i*0.12, 0, 0);
+t.rotation.y = i * 0.75;
+g.add(t);
+}
+} else if(id === 'fruit'){
+const cols = [0x8e44ad, 0xc0392b, 0xf39c12, 0x27ae60];
+for(let i=0;i<4;i++){
+const b = m(cols[i], new THREE.SphereGeometry(0.085, 9, 7));
+b.position.set(-0.21 + i*0.14, -0.05*Math.sin(i*1.7), 0);
+g.add(b);
+}
+} else {
+const frame = m(0x8b5a2b, new THREE.BoxGeometry(0.40, 0.32, 0.02));
+g.add(frame);
+const face = m(0xf7ecd0, new THREE.BoxGeometry(0.34, 0.26, 0.025));
+face.position.z = 0.012;
+g.add(face);
+const star = m(0xffd166, new THREE.BoxGeometry(0.16, 0.16, 0.01));
+star.position.z = 0.03;
+star.rotation.z = Math.PI/4;
+g.add(star);
+}
+return g;
+}
+
+/* ---------- TREE CANOPY (level 2) ---------- */
+function createTreeCanopy(L){
+if(!L.tree) return;
+const w = L.w, d = L.d;
+const hw = w*CELL/2, hd = d*CELL/2;
+const rows = L.tree.rows || 1;
+const zCenter = (-d/2 + (rows-1)/2 + 0.5) * CELL;
+
+const grp = new THREE.Group();
+
+const trunkMat = new THREE.MeshLambertMaterial({ color:0x6b4a2f });
+const leafMatA = new THREE.MeshLambertMaterial({ color:0x3f7d31 });
+const leafMatB = new THREE.MeshLambertMaterial({ color:0x4f8f3a });
+const leafMatC = new THREE.MeshLambertMaterial({ color:0x5ea845 });
+
+const canopyY = ROOF_Y + 1.35;
+const trunkH = canopyY;
+
+const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.24,0.34, trunkH, 8), trunkMat);
+trunk.position.set(-hw - 1.7, trunkH/2, zCenter - 0.5);
+trunk.rotation.z = 0.10;
+trunk.castShadow = true;
+grp.add(trunk);
+
+for(let b=0;b<3;b++){
+const br = new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.14, 2.2, 6), trunkMat);
+br.position.set(-hw - 0.7 + b*0.95, canopyY - 0.42, zCenter - 0.3);
+br.rotation.z = -0.72 + b*0.16;
+br.rotation.x = 0.22;
+br.castShadow = true;
+grp.add(br);
+}
+
+const leafMats = [leafMatA, leafMatB, leafMatC];
+for(let i=0;i<16;i++){
+const r = 0.52 + Math.random()*0.48;
+const blob = new THREE.Mesh(
+new THREE.SphereGeometry(r, 9, 7),
+leafMats[Math.floor(Math.random()*leafMats.length)]
+);
+blob.position.set(
+(Math.random()-0.5) * (w*CELL + 1.8),
+canopyY + (Math.random()-0.32) * 0.75,
+zCenter + (Math.random()-0.5) * (rows*CELL + 0.55)
+);
+blob.castShadow = true;
+grp.add(blob);
+}
+
+/* a few dangling leafy twigs so the overhang is obvious */
+for(let i=0;i<6;i++){
+const twig = new THREE.Mesh(new THREE.SphereGeometry(0.30, 7, 6), leafMatB);
+twig.position.set(
+(-w/2 + 0.5 + i*0.9) * (CELL*0.9),
+canopyY - 0.72 + (Math.random()-0.5)*0.2,
+zCenter + (Math.random()-0.5) * rows*CELL
+);
+twig.castShadow = true;
+grp.add(twig);
+}
+
+buildGroup.add(grp);
+state.treeGroup = grp;
+}
+
+function popIn(obj, dur){
+dur = dur || 300;
+const t0 = performance.now();
+obj.scale.set(0.01, 0.01, 0.01);
+anims.push(function(now){
+const t = Math.min(1, (now - t0) / dur);
+const e = 1 - Math.pow(1 - t, 3);
+const s = e * (1 + 0.13 * Math.sin(t * Math.PI));
+obj.scale.set(s, s, s);
+return t < 1;
+});
+}
+
+/* =========================================================
+SAVE / RESTORE / AFTER-CHANGE
+========================================================= */
+function afterChange(){
+if(suppressSideEffects) return;
+if(!state || state.levelIndex !== levelIndex) return;   /* safety */
+saveCurrentLevel();
+applyCategoryTransparency();
+refreshGoals();
+updateNav();
+}
+
+function saveCurrentLevel(){
+if(!state || !state.wallSides) return;
+const save = { walls:{}, roof:{}, decor:{}, wallHeight: state.wallHeight };
+state.wallSides.forEach((side, si)=>{
+side.slots.forEach((sl, i)=>{
+if(sl.matId) save.walls[si + '-' + i] = { m: sl.matId, h: sl.heightTef || 10 };
+});
+});
+state.roofTiles.forEach((t, i)=>{
+if(t.matId) save.roof[i] = t.matId;
+});
+state.decorSlots.forEach((s, i)=>{
+if(s.matId) save.decor[i] = s.matId;
+});
+levelSaves[levelIndex] = save;
+}
+
+function restoreSave(idx){
+const save = levelSaves[idx];
+if(!save) return;
+
+Object.entries(save.walls || {}).forEach(([key, val])=>{
+const parts = key.split('-');
+const si = Number(parts[0]), i = Number(parts[1]);
+const sideObj = state.wallSides[si];
+if(!sideObj) return;
+const slot = sideObj.slots[i];
+if(slot && !slot.built) placeWall(slot, val.m, val.h, true);
+});
+
+Object.entries(save.roof || {}).forEach(([i, m])=>{
+const tile = state.roofTiles[Number(i)];
+if(tile && !tile.built) placeRoof(tile, m, true);
+});
+
+Object.entries(save.decor || {}).forEach(([i, m])=>{
+const slot = state.decorSlots[Number(i)];
+if(slot && !slot.built) placeDecor(slot, m, true);
+});
+
+/* make sure every filled slot has its ghost truly off */
+state.wallSides.forEach(side=>side.slots.forEach(sl=>{
+if(sl.built){ sl.ghost.visible = false; disableGhostRay(sl.ghost); }
+}));
+state.roofTiles.forEach(t=>{
+if(t.built){ t.ghost.visible = false; disableGhostRay(t.ghost); }
+});
+state.decorSlots.forEach(s=>{
+if(s.built){ s.ghost.visible = false; disableGhostRay(s.ghost); }
+});
+}
+
+/* =========================================================
+EVALUATION / GOALS
+========================================================= */
+function evaluate(){
+let complete = 0, partial = 0;
+let badWalls = 0, filledWalls = 0;
+
+state.wallSides.forEach(side=>{
+let valid = 0;
+side.slots.forEach(sl=>{
+if(sl.matId){
+filledWalls++;
+const def = WALLS.find(m=>m.id===sl.matId);
+if(def && def.valid) valid++;
+else badWalls++;
+}
+});
+if(side.slots.length > 0 && valid === side.slots.length) complete++;
+else if(valid > 0) partial++;
+});
+
+let shadeSum = 0, badRoof = 0, filledRoof = 0;
+state.roofTiles.forEach(t=>{
+if(t.matId){
+filledRoof++;
+const def = ROOF_MATS.find(m=>m.id===t.matId);
+if(def){
+shadeSum += def.density;
+if(!def.kosher) badRoof++;
+}
+}
+});
+
+const total = state.roofTiles.length || 1;
+const shade = Math.round(shadeSum / total * 100);
+const decor = state.decorSlots.filter(d=>d.matId).length;
+
+return { complete, partial, badWalls, filledWalls, shade, badRoof, filledRoof, decor };
+}
+
+/* ---------- GEOMETRY / SCHACH-GAP ANALYSIS ---------- */
+function analyzeSukkah(){
+const L = state.L;
+const w = L.w, d = L.d;
+
+const W_tef = Math.round(w * CELL / TEFACH);
+const D_tef = Math.round(d * CELL / TEFACH);
+
+/* grid of coverage: cov[i][j] — i across width, j across depth */
+const cov = [];
+for(let i=0;i<w;i++){ cov[i] = []; for(let j=0;j<d;j++) cov[i][j] = false; }
+state.roofTiles.forEach((t, idx)=>{
+const i = Math.floor(idx / d);
+const j = idx % d;
+cov[i][j] = !!t.matId;
+});
+
+/* full-row and full-column gaps (a break that runs edge to edge) */
+const fullRowGaps = [];
+for(let j=0;j<d;j++){
+let allOpen = true;
+for(let i=0;i<w;i++){ if(cov[i][j]){ allOpen = false; break; } }
+if(allOpen) fullRowGaps.push(j);
+}
+const fullColGaps = [];
+for(let i=0;i<w;i++){
+let allOpen = true;
+for(let j=0;j<d;j++){ if(cov[i][j]){ allOpen = false; break; } }
+if(allOpen) fullColGaps.push(i);
+}
+
+/* connected regions of covered tiles (4-connectivity) */
+const seen = [];
+for(let i=0;i<w;i++){ seen[i] = []; for(let j=0;j<d;j++) seen[i][j] = false; }
+const regions = [];
+for(let i=0;i<w;i++){
+for(let j=0;j<d;j++){
+if(!cov[i][j] || seen[i][j]) continue;
+const stack = [[i,j]];
+seen[i][j] = true;
+let minI=i,maxI=i,minJ=j,maxJ=j,count=0;
+while(stack.length){
+const [ci,cj] = stack.pop();
+count++;
+if(ci<minI) minI=ci; if(ci>maxI) maxI=ci;
+if(cj<minJ) minJ=cj; if(cj>maxJ) maxJ=cj;
+const nb = [[1,0],[-1,0],[0,1],[0,-1]];
+for(let n=0;n<4;n++){
+const ni = ci+nb[n][0], nj = cj+nb[n][1];
+if(ni>=0 && ni<w && nj>=0 && nj<d && cov[ni][nj] && !seen[ni][nj]){
+seen[ni][nj] = true;
+stack.push([ni,nj]);
+}
+}
+}
+regions.push({
+count,
+wTiles: maxI-minI+1,
+dTiles: maxJ-minJ+1,
+wTef: Math.round((maxI-minI+1) * TILE_TEF),
+dTef: Math.round((maxJ-minJ+1) * TILE_TEF)
+});
+}
+}
+
+const coveredCount = state.roofTiles.filter(t=>t.matId).length;
+const totalTiles = w * d;
+const splits = fullRowGaps.length + fullColGaps.length;
+const tooSmall = regions.some(r => r.wTiles < 2 || r.dTiles < 2);
+
+return {
+W_tef, D_tef, coveredCount, totalTiles,
+fullRowGaps, fullColGaps, splits, regions, tooSmall,
+minDimOK: (W_tef >= MIN_SUKKAH_TEF && D_tef >= MIN_SUKKAH_TEF)
+};
+}
+
+function updateSukkahInfo(){
+if(!state){ sukkahInfoEl.textContent = '—'; return; }
+const a = analyzeSukkah();
+const L = state.L;
+
+let html = `📐 <b>${a.W_tef} × ${a.D_tef}</b> tefachim`;
+if(!a.minDimOK){
+html += ` <span class="warn">(min ${MIN_SUKKAH_TEF}×${MIN_SUKKAH_TEF})</span>`;
+}
+html += ` &nbsp;·&nbsp; 🌿 <b>${a.coveredCount}/${a.totalTiles}</b> schach`;
+
+if(a.splits > 0 && a.coveredCount > 0){
+html += `<br>⚠️ A full gap breaks the schach — the sukkah splits into <b>${a.regions.length || 0}</b> part${a.regions.length===1?'':'s'}`;
+if(a.tooSmall){
+html += ` <span class="warn">· a part is smaller than ${MIN_SUKKAH_TEF}×${MIN_SUKKAH_TEF} tf</span>`;
+} else {
+html += ` <span class="good">· each part is at least ${MIN_SUKKAH_TEF}×${MIN_SUKKAH_TEF} tf ✓</span>`;
+}
+} else if(a.coveredCount > 0 && a.splits === 0){
+html += `<br><span class="good">✓ Schach is unbroken — one sukkah</span>`;
+}
+
+if(L.tree){
+const under = state.roofTiles.filter(t=>t.underTree);
+const cov = under.filter(t=>t.matId).length;
+html += `<br>🌳 Tree overhang: <b>${cov}/${under.length}</b> tiles schach-covered`;
+}
+
+sukkahInfoEl.innerHTML = html;
+}
+
+function getGoals(){
+const L = state.L;
+const e = evaluate();
+const g = [];
+
+const wallNeed = L.completeWalls + L.partialWalls;
+g.push({
+text: `${L.completeWalls} complete wall${L.completeWalls>1?'s':''}` +
+(L.partialWalls ? ` + ${L.partialWalls} partial` : ''),
+ok: e.complete >= L.completeWalls && (e.complete + e.partial) >= wallNeed,
+detail: `${e.complete}✓ ${e.partial}◐`
+});
+
+g.push({
+text: 'Walls at least 10 tefachim tall',
+ok: e.badWalls === 0 && e.filledWalls > 0
+});
+
+if(L.tree){
+const under = state.roofTiles.filter(t=>t.underTree);
+const cov = under.filter(t=>t.matId).length;
+g.push({
+text: 'Lay real schach under the tree',
+ok: cov === under.length && under.length > 0,
+detail: `${cov}/${under.length}`
+});
+}
+
+g.push({
+text: `More shade than sun (≥${L.minShade}%)`,
+ok: e.shade >= L.minShade,
+detail: `${e.shade}%`
+});
+
+if(L.maxShade < 100){
+g.push({
+text: `Still see the stars (≤${L.maxShade}%)`,
+ok: e.shade <= L.maxShade && e.filledRoof > 0
+});
+}
+
+g.push({
+text: 'Schach only from plants',
+ok: e.badRoof === 0 && e.filledRoof > 0
+});
+
+if(L.splitRule){
+const a = analyzeSukkah();
+g.push({
+text: 'No full break splits the sukkah',
+ok: a.coveredCount > 0 && (a.splits === 0 || !a.tooSmall),
+detail: a.splits > 0 ? `${a.regions.length} part${a.regions.length===1?'':'s'}` : ''
+});
+}
+
+if(L.minDecor > 0){
+g.push({
+text: `Hang ${L.minDecor} decoration${L.minDecor>1?'s':''}`,
+ok: e.decor >= L.minDecor,
+detail: `${e.decor}/${L.minDecor}`
+});
+}
+
+return g;
+}
+
+function refreshGoals(){
+if(!state) return;
+const goals = getGoals();
+
+goalListEl.innerHTML = goals.map(g =>
+`<div class="goal ${g.ok ? 'ok' : ''}">
+<span class="gchk">${g.ok ? '✓' : '○'}</span>
+<span class="gtx">${g.text}${g.detail ? ` <em>(${g.detail})</em>` : ''}</span>
+</div>`
+).join('');
+
+const done = goals.filter(g=>g.ok).length;
+goalCountEl.textContent = done + '/' + goals.length;
+
+updateSukkahInfo();
+
+const allDone = done === goals.length;
+
+if(allDone){
+levelComplete = true;
+if(!completedLevels.has(levelIndex)){
+completedLevels.add(levelIndex);
+maxUnlocked = Math.max(maxUnlocked, Math.min(levelIndex + 1, LEVELS.length - 1));
+onLevelComplete();
+}
+} else {
+levelComplete = false;
+if(completeBannerEl.classList.contains('show')) hideCompleteBanner();
+}
+}
+
+/* =========================================================
+CATEGORY FADING (see the decor spots through the walls)
+========================================================= */
+function fadeMesh(mesh, fade){
+const mat = mesh.material;
+if(!mat || mat.userData.origOpacity === undefined) return;
+
+const wantTransparent = fade ? true : mat.userData.origTransparent;
+const wantOpacity = fade ? mat.userData.origOpacity * 0.18 : mat.userData.origOpacity;
+const wantDepthWrite = fade ? false : mat.userData.origDepthWrite;
+
+if(mat.transparent !== wantTransparent){
+mat.transparent = wantTransparent;
+mat.needsUpdate = true;
+}
+mat.opacity = wantOpacity;
+if(mat.depthWrite !== wantDepthWrite) mat.depthWrite = wantDepthWrite;
+}
+
+function applyCategoryTransparency(){
+if(!state || !state.wallSides) return;
+const fade = state.cat === 'decor';
+state.wallSides.forEach(side=>{
+side.slots.forEach(sl=>{ if(sl.built) fadeMesh(sl.built, fade); });
+});
+state.roofTiles.forEach(t=>{ if(t.built) fadeMesh(t.built, fade); });
+}
+
+/* =========================================================
+SHOP UI
+========================================================= */
+function renderShop(){
+const cat = state.cat;
+let list, selId;
+if(cat === 'walls'){ list = WALLS; selId = state.selWall; }
+else if(cat === 'roof'){ list = ROOF_MATS; selId = state.selRoof; }
+else { list = DECOR; selId = state.selDecor; }
+
+itemsEl.innerHTML = '';
+list.forEach(def=>{
+const el = document.createElement('div');
+el.className = 'item' + (def.id === selId ? ' sel' : '');
+el.innerHTML =
+`<div class="ico">${def.emoji}</div>` +
+`<div class="nm">${def.name}</div>` +
+`<div class="tip">${def.tip}</div>`;
+el.addEventListener('click', ()=> selectItem(cat, def.id));
+itemsEl.appendChild(el);
+});
+
+updateHeightRow();
+}
+
+function setActiveTab(cat){
+if(!state) return;
+state.cat = cat;
+[...tabsEl.children].forEach(b=>{
+b.classList.toggle('active', b.dataset.cat === cat);
+});
+updateGhostVisibility();
+applyCategoryTransparency();
+renderShop();
+}
+
+function selectItem(cat, id){
+if(cat === 'walls') state.selWall = id;
+else if(cat === 'roof') state.selRoof = id;
+else state.selDecor = id;
+
+renderShop();
+updateGhostHeights();
+
+let def;
+if(cat === 'walls') def = WALLS.find(m=>m.id===id);
+else if(cat === 'roof') def = ROOF_MATS.find(m=>m.id===id);
+else def = DECOR.find(m=>m.id===id);
+
+if(def) showHint(`${def.emoji} ${def.name}: ${def.tip}`);
+}
+
+function updateHeightRow(){
+if(!state){ heightRowEl.style.display = 'none'; return; }
+if(state.cat !== 'walls'){ heightRowEl.style.display = 'none'; return; }
+const def = WALLS.find(m=>m.id===state.selWall);
+if(!def || !def.valid){ heightRowEl.style.display = 'none'; return; }
+heightRowEl.style.display = 'flex';
+[...heightChipsEl.children].forEach(chip=>{
+chip.classList.toggle('active', Number(chip.dataset.h) === state.wallHeight);
+});
+}
+
+WALL_HEIGHTS.forEach(h=>{
+const chip = document.createElement('button');
+chip.className = 'hchip';
+chip.dataset.h = h;
+chip.textContent = h;
+chip.addEventListener('click', ()=>{
+if(!state) return;
+state.wallHeight = h;
+updateHeightRow();
+updateGhostHeights();
+showHint('📏 Wall height: ' + h + ' tefachim');
+});
+heightChipsEl.appendChild(chip);
+});
+
+tabsEl.addEventListener('click', (e)=>{
+const btn = e.target.closest('.tab');
+if(!btn) return;
+setActiveTab(btn.dataset.cat);
+if(btn.dataset.cat === 'decor'){
+showHint('👻 Walls & schach faded — tap a glowing dot to hang decor!', 3200);
+} else if(btn.dataset.cat === 'roof'){
+showHint('🌿 Tap the glowing roof tiles to lay schach.', 2600);
+}
+});
+
+$('goalHead').addEventListener('click', ()=>{
+goalPanelEl.classList.toggle('collapsed');
+});
+
+/* =========================================================
+HINT TOAST
+========================================================= */
+let hintTimer = null;
+let lastHintTime = 0;
+function showHint(msg, ms){
+const now = performance.now();
+if(now - lastHintTime < 250) return;
+lastHintTime = now;
+hintEl.innerHTML = msg;
+hintEl.classList.add('show');
+clearTimeout(hintTimer);
+hintTimer = setTimeout(()=>hintEl.classList.remove('show'), ms || 2600);
+}
+
+/* =========================================================
+GHOST VISIBILITY (category isolation, visual)
+========================================================= */
+function updateGhostVisibility(){
+if(!state) return;
+const active = state.cat;
+ghostWallMat.userData = { base: active === 'walls' ? 1 : (active === 'decor' ? 0.16 : 0.30) };
+ghostRoofMat.userData = { base: active === 'roof' ? 1 : (active === 'decor' ? 0.16 : 0.30) };
+ghostTreeMat.userData = { base: active === 'roof' ? 1 : (active === 'decor' ? 0.16 : 0.34) };
+ghostDecorMat.userData = { base: active === 'decor' ? 1 : 0.30 };
+}
+
+/* =========================================================
+MODAL
+========================================================= */
+function showModal(eyebrow, title, bodyHTML, btnText, cb, alt, btn2Text, cb2){
+modalEyebrow.textContent = eyebrow || '';
+modalTitleEl.textContent = title;
+modalBodyEl.innerHTML = bodyHTML;
+modalBtnEl.textContent = btnText || 'Got it!';
+modalBtnEl.className = alt ? 'alt' : '';
+modalEl.classList.add('show');
+document.getElementById('modalCard').scrollTop = 0;
+
+modalBtnEl.onclick = ()=>{
+modalEl.classList.remove('show');
+if(cb) setTimeout(cb, 200);
+};
+
+if(btn2Text){
+modalBtn2El.style.display = 'block';
+modalBtn2El.textContent = btn2Text;
+modalBtn2El.onclick = ()=>{
+modalEl.classList.remove('show');
+if(cb2) setTimeout(cb2, 220);
+};
+} else {
+modalBtn2El.style.display = 'none';
+modalBtn2El.onclick = null;
+}
+}
+
+function showSources(){
+const src = SOURCES[levelIndex] || SOURCES[0];
+showModal(
+'📚 DEEP DIVE · MISHNAH · GEMARA · HALACHA',
+src.title,
+src.body,
+'Back to building 🛠️',
+null,
+true
+);
+}
+
+/* =========================================================
+LEVEL COMPLETE
+========================================================= */
+function onLevelComplete(){
+spawnConfetti();
+const isLast = levelIndex >= LEVELS.length - 1;
+
+if(isLast){
+cbTextEl.innerHTML = '🏆 <b>All sukkot built!</b><br>Chag Sameach — you\'re a Sukkah Master!';
+cbNextEl.textContent = 'Play Again 🔁';
+cbNextEl.onclick = ()=>{ hideCompleteBanner(); loadLevel(0); };
+} else {
+cbTextEl.innerHTML = '🎉 <b>Beautiful Sukkah!</b><br>Look around, then continue when you\'re ready.';
+cbNextEl.textContent = 'Next Level ›';
+cbNextEl.onclick = ()=>{ loadLevel(levelIndex + 1); };
+}
+completeBannerEl.classList.add('show');
+updateNav();
+}
+
+function hideCompleteBanner(){
+completeBannerEl.classList.remove('show');
+}
+
+function spawnConfetti(){
+const colors = [0xff6b9d, 0xffd166, 0x4ecdc4, 0xa78bfa, 0x74d680, 0xff9f43, 0xffffff];
+for(let i=0;i<80;i++){
+const m = new THREE.Mesh(
+new THREE.BoxGeometry(0.10, 0.10, 0.02),
+new THREE.MeshLambertMaterial({ color: colors[i % colors.length] })
+);
+m.position.set(
+(Math.random()-0.5) * 3,
+ROOF_Y + 1 + Math.random() * 2.5,
+(Math.random()-0.5) * 3
+);
+m.userData.v = new THREE.Vector3(
+(Math.random()-0.5) * 3.5,
+2.5 + Math.random() * 4.5,
+(Math.random()-0.5) * 3.5
+);
+m.userData.r = new THREE.Vector3(
+Math.random()*6 - 3,
+Math.random()*6 - 3,
+Math.random()*6 - 3
+);
+scene.add(m);
+confetti.push(m);
+}
+}
+
+/* =========================================================
+PREVIEW MODEL
+========================================================= */
+function buildPreviewModel(L){
+if(previewGroup){
+scene.remove(previewGroup);
+disposeGroup(previewGroup);
+}
+previewGroup = new THREE.Group();
+previewGroup.position.set(0, 0, PREVIEW_Z);
+scene.add(previewGroup);
+
+const w = L.w, d = L.d;
+const hw = w * CELL / 2;
+const hd = d * CELL / 2;
+
+const pad = new THREE.Mesh(
+new THREE.CylinderGeometry(Math.max(hw,hd) + 1.6, Math.max(hw,hd) + 1.6, 0.14, 28),
+new THREE.MeshLambertMaterial({ color:0x8bbf68 })
+);
+pad.position.y = 0.07;
+previewGroup.add(pad);
+
+const floor = new THREE.Mesh(
+new THREE.BoxGeometry(w*CELL + 0.5, 0.1, d*CELL + 0.5),
+new THREE.MeshLambertMaterial({ color:0xdcc99e })
+);
+floor.position.y = 0.05;
+previewGroup.add(floor);
+
+let wallMatDef = WALLS[1];
+if(levelIndex === 5) wallMatDef = WALLS.find(m=>m.id==='strapsOnly') || wallMatDef;
+if(levelIndex === 6) wallMatDef = WALLS.find(m=>m.id==='fabricStraps') || wallMatDef;
+
+const isStraps = wallMatDef.tex === 'strapsOnly';
+const wallMat = new THREE.MeshLambertMaterial({
+map: wallTexture(wallMatDef.tex, wallMatDef.color),
+transparent: !isStraps,
+alphaTest: isStraps ? 0.5 : 0,
+side: isStraps ? THREE.DoubleSide : THREE.FrontSide
+});
+const wallH = 10 * TEFACH;
+
+const sides = [
+{ n:w, fx:(i)=>({x:(-w/2+i+0.5)*CELL, z:-hd}), ry:0 },
+{ n:w, fx:(i)=>({x:(-w/2+i+0.5)*CELL, z: hd}), ry:0 },
+{ n:d, fx:(i)=>({x:-hw, z:(-d/2+i+0.5)*CELL}), ry:Math.PI/2 },
+{ n:d, fx:(i)=>({x: hw, z:(-d/2+i+0.5)*CELL}), ry:Math.PI/2 }
+];
+
+const fullWalls = L.completeWalls;
+const partialWalls = L.partialWalls;
+
+sides.forEach((sd, si)=>{
+let count;
+if(si < fullWalls) count = sd.n;
+else if(si < fullWalls + partialWalls) count = Math.max(1, Math.floor(sd.n/2));
+else count = 0;
+
+for(let i=0;i<count;i++){
+const p = sd.fx(i);
+const geo = new THREE.BoxGeometry(CELL*0.94, wallH, 0.11);
+geo.translate(0, wallH/2, 0);
+const mesh = new THREE.Mesh(geo, wallMat);
+mesh.position.set(p.x, 0.1, p.z);
+mesh.rotation.y = sd.ry;
+previewGroup.add(mesh);
+}
+});
+
+const roofDef = ROOF_MATS[0];
+const targetShade = clamp((L.minShade + L.maxShade) / 2, 40, 92);
+const totalTiles = w * d;
+let tilesToFill = Math.round((targetShade / 100) * totalTiles / roofDef.density);
+tilesToFill = clamp(tilesToFill, 0, totalTiles);
+
+const roofMat = new THREE.MeshLambertMaterial({ map: roofTexture(roofDef.tex, roofDef.color) });
+let placed = 0;
+for(let i=0;i<w && placed < tilesToFill;i++){
+for(let j=0;j<d && placed < tilesToFill;j++){
+const x = (-w/2 + i + 0.5) * CELL;
+const z = (-d/2 + j + 0.5) * CELL;
+const t = new THREE.Mesh(
+new THREE.BoxGeometry(CELL*0.92, 0.11, CELL*0.92),
+roofMat
+);
+t.position.set(x, ROOF_Y, z);
+previewGroup.add(t);
+placed++;
+}
+}
+
+const decorCount = Math.max(L.minDecor, 2);
+const decorSpots = [
+{ x:0, z:-hd + 0.30 }, { x:0, z: hd - 0.30 },
+{ x:-hw + 0.30, z:0 }, { x: hw - 0.30, z:0 }
+];
+const decorIds = ['lights','chain','fruit','ushpizin'];
+for(let i=0;i<Math.min(decorCount, decorSpots.length);i++){
+const dm = makeDecorMesh(decorIds[i % decorIds.length]);
+dm.position.set(decorSpots[i].x, ROOF_Y - 0.28, decorSpots[i].z);
+previewGroup.add(dm);
+}
+
+/* preview tree for the tree level */
+if(L.tree){
+const rows = L.tree.rows || 1;
+const zCenter = (-d/2 + (rows-1)/2 + 0.5) * CELL;
+const trunkMat = new THREE.MeshLambertMaterial({ color:0x6b4a2f });
+const leafMatA = new THREE.MeshLambertMaterial({ color:0x3f7d31 });
+const leafMatB = new THREE.MeshLambertMaterial({ color:0x4f8f3a });
+const canopyY = ROOF_Y + 1.35;
+const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.24,0.34,canopyY,8), trunkMat);
+trunk.position.set(-hw - 1.7, canopyY/2, zCenter - 0.5);
+previewGroup.add(trunk);
+for(let i=0;i<12;i++){
+const blob = new THREE.Mesh(
+new THREE.SphereGeometry(0.5 + Math.random()*0.45, 9, 7),
+Math.random()>0.5 ? leafMatA : leafMatB
+);
+blob.position.set(
+(Math.random()-0.5)*(w*CELL+1.8),
+canopyY + (Math.random()-0.32)*0.7,
+zCenter + (Math.random()-0.5)*(rows*CELL+0.55)
+);
+previewGroup.add(blob);
+}
+}
+
+const table = new THREE.Mesh(
+new THREE.CylinderGeometry(0.42, 0.42, 0.07, 14),
+new THREE.MeshLambertMaterial({ color:0xa9764a })
+);
+table.position.set(0, 0.72, 0);
+previewGroup.add(table);
+const leg = new THREE.Mesh(
+new THREE.CylinderGeometry(0.06, 0.06, 0.68, 8),
+new THREE.MeshLambertMaterial({ color:0x8a6238 })
+);
+leg.position.set(0, 0.36, 0);
+previewGroup.add(leg);
+
+const ring = new THREE.Mesh(
+new THREE.RingGeometry(Math.max(hw,hd) + 1.7, Math.max(hw,hd) + 2.0, 40),
+new THREE.MeshBasicMaterial({ color:0xffd166, transparent:true, opacity:0.5, side:THREE.DoubleSide })
+);
+ring.rotation.x = -Math.PI/2;
+ring.position.y = 0.16;
+previewGroup.add(ring);
+}
+
+/* =========================================================
+PREVIEW MODE
+========================================================= */
+function enterPreview(){
+previewMode = true;
+uiEl.classList.add('ui-hidden');
+previewBarEl.classList.add('show');
+desired.target.set(0, 1.3, PREVIEW_Z);
+desired.radius = 7 + Math.max(state.L.w, state.L.d) * 1.5;
+desired.phi = 1.02;
+desired.theta = 0.7;
+}
+
+function exitPreview(){
+previewMode = false;
+uiEl.classList.remove('ui-hidden');
+previewBarEl.classList.remove('show');
+desired.target.set(0, 1.1, 0);
+desired.radius = state.viewRadius;
+desired.phi = 1.02;
+desired.theta = 0.85;
+}
+
+$('btnPreview').addEventListener('click', enterPreview);
+$('previewExit').addEventListener('click', exitPreview);
+
+/* =========================================================
+LEVEL NAVIGATION
+========================================================= */
+function updateNav(){
+btnPrevEl.disabled = levelIndex <= 0;
+btnNextEl.disabled = levelIndex >= maxUnlocked;
+navProgressEl.textContent = (levelIndex + 1) + ' / ' + LEVELS.length;
+}
+
+btnPrevEl.addEventListener('click', ()=>{
+if(levelIndex > 0) loadLevel(levelIndex - 1);
+});
+
+btnNextEl.addEventListener('click', ()=>{
+if(levelIndex < maxUnlocked) loadLevel(levelIndex + 1);
+else if(!levelComplete){
+const goals = getGoals();
+const remaining = goals.filter(g=>!g.ok).length;
+showHint('🔒 Finish the goals first! ' + remaining + ' remaining.', 2800);
+}
+});
+
+/* =========================================================
+LESSON BUTTON (+ Read More deep dive)
+========================================================= */
+$('btnLesson').addEventListener('click', ()=>{
+const L = state.L;
+showModal(
+'📖 SUKKOT RULES',
+'Building a Sukkah',
+`<p>${L.lesson}</p>
+<div class="tipbox">${L.tip}</div>
+<ul>
+<li><b>Walls:</b> at least 2 complete walls + a bit of a third.</li>
+<li><b>Height:</b> walls at least 10 tefachim (≈1 meter).</li>
+<li><b>Schach:</b> roof from cut plants — never metal or plastic.</li>
+<li><b>Shade:</b> more shade than sun, but you should see stars.</li>
+<li><b>Trees:</b> leaves still on the tree do <i>not</i> count as schach.</li>
+<li><b>Gaps:</b> a full break in the schach can split the sukkah.</li>
+<li><b>Lavud:</b> gaps under 3 tefachim count as closed.</li>
+<li><b>Beauty:</b> decorate it! It's a mitzvah to make it lovely.</li>
+</ul>`,
+'Let\'s build!',
+null,
+false,
+'📚 Read more — the sources',
+showSources
+);
+});
+
+/* =========================================================
+RESET BUTTON
+========================================================= */
+$('btnReset').addEventListener('click', ()=>{
+showModal(
+'↺ START OVER',
+'Rebuild this sukkah?',
+'<p>Your walls, schach, and decorations will be cleared so you can try again.</p>',
+'Yes, clear it',
+()=>{
+delete levelSaves[levelIndex];
+completedLevels.delete(levelIndex);
+loadLevel(levelIndex, true);
+}
+);
+});
+
+/* =========================================================
+INPUT — ORBIT + TAP
+========================================================= */
+const raycaster = new THREE.Raycaster();
+const pointers = new Map();
+let pinchStart = 0;
+let userInteractUntil = 0;
+
+function getPinch(){
+const arr = [...pointers.values()];
+if(arr.length < 2) return 0;
+return Math.hypot(arr[0].x - arr[1].x, arr[0].y - arr[1].y);
+}
+
+canvas.addEventListener('pointerdown', (e)=>{
+e.preventDefault();
+try{ canvas.setPointerCapture(e.pointerId); }catch(err){}
+pointers.set(e.pointerId, {
+x:e.clientX, y:e.clientY,
+sx:e.clientX, sy:e.clientY,
+t:performance.now(),
+moved:false
+});
+if(pointers.size === 2) pinchStart = getPinch();
+}, { passive:false });
+
+canvas.addEventListener('pointermove', (e)=>{
+const p = pointers.get(e.pointerId);
+if(!p) return;
+e.preventDefault();
+
+const dx = e.clientX - p.x;
+const dy = e.clientY - p.y;
+p.x = e.clientX;
+p.y = e.clientY;
+
+if(Math.hypot(e.clientX - p.sx, e.clientY - p.sy) > 10) p.moved = true;
+
+if(pointers.size === 1){
+desired.theta -= dx * 0.0065;
+desired.phi = clamp(desired.phi - dy * 0.0055, 0.20, 1.45);
+userInteractUntil = performance.now() + 2500;
+} else if(pointers.size === 2){
+const d = getPinch();
+if(pinchStart > 0 && d > 0){
+desired.radius = clamp(desired.radius * (pinchStart / d), 3.5, 34);
+}
+pinchStart = d;
+userInteractUntil = performance.now() + 2500;
+}
+}, { passive:false });
+
+function endPointer(e){
+const p = pointers.get(e.pointerId);
+pointers.delete(e.pointerId);
+if(!p) return;
+if(pointers.size < 2) pinchStart = 0;
+
+const dt = performance.now() - p.t;
+if(!p.moved && dt < 550 && pointers.size === 0){
+handleTap(e.clientX, e.clientY);
+}
+}
+
+canvas.addEventListener('pointerup', endPointer);
+canvas.addEventListener('pointercancel', endPointer);
+
+canvas.addEventListener('wheel', (e)=>{
+e.preventDefault();
+desired.radius = clamp(desired.radius * (1 + Math.sign(e.deltaY) * 0.12), 3.5, 34);
+}, { passive:false });
+
+document.addEventListener('touchmove', (e)=>{
+if(e.target === canvas) e.preventDefault();
+}, { passive:false });
+
+/* ---------- TAP HANDLING (STRICT CATEGORY ISOLATION) ---------- */
+function findHit(obj){
+let o = obj;
+while(o){
+if(o.userData && o.userData.kind) return o;
+o = o.parent;
+}
+return null;
+}
+
+let wrongCategoryHintTime = 0;
+
+function handleTap(cx, cy){
+if(previewMode || !buildGroup || !state) return;
+
+const rect = canvas.getBoundingClientRect();
+const nx = ((cx - rect.left) / rect.width) * 2 - 1;
+const ny = -((cy - rect.top) / rect.height) * 2 + 1;
+
+raycaster.setFromCamera({ x:nx, y:ny }, camera);
+
+const hits = raycaster.intersectObjects(buildGroup.children, true);
+
+let hitWrongCategory = false;
+
+for(let hi=0; hi<hits.length; hi++){
+const h = hits[hi];
+/* skip anything invisible — this is what stops the "wipe" glitch */
+if(h.object && h.object.visible === false) continue;
+
+const o = findHit(h.object);
+if(!o) continue;
+const u = o.userData;
+
+if(u.kind === 'wall'){
+if(state.cat !== 'walls'){ hitWrongCategory = true; continue; }
+const sideObj = state.wallSides[u.side];
+const slot = sideObj && sideObj.slots[u.slot];
+if(!slot) continue;
+if(slot.matId) removeWall(slot);
+else placeWall(slot, state.selWall);
+return;
+}
+
+if(u.kind === 'roof'){
+if(state.cat !== 'roof'){ hitWrongCategory = true; continue; }
+const tile = state.roofTiles[u.idx];
+if(!tile) continue;
+if(tile.matId) removeRoof(tile);
+else placeRoof(tile, state.selRoof);
+return;
+}
+
+if(u.kind === 'decor'){
+if(state.cat !== 'decor'){ hitWrongCategory = true; continue; }
+const slot = state.decorSlots[u.idx];
+if(!slot) continue;
+if(slot.matId) removeDecor(slot);
+else placeDecor(slot, state.selDecor);
+return;
+}
+}
+
+if(hitWrongCategory){
+const now = performance.now();
+if(now - wrongCategoryHintTime > 2000){
+wrongCategoryHintTime = now;
+const names = { walls:'🧱 Walls', roof:'🌿 Schach', decor:'✨ Decor' };
+showHint('Switch to the ' + names[state.cat] + ' tab to edit this part.', 2200);
+}
+}
+}
+
+/* =========================================================
+RENDER LOOP
+========================================================= */
+let lastT = performance.now();
+
+function animate(now){
+requestAnimationFrame(animate);
+
+const dt = Math.min(0.05, (now - lastT) / 1000);
+lastT = now;
+
+for(let i=anims.length-1;i>=0;i--){
+if(!anims[i](now)) anims.splice(i,1);
+}
+
+updateAnimals(dt);
+
+for(let i=confetti.length-1;i>=0;i--){
+const m = confetti[i];
+const v = m.userData.v;
+v.y -= 9.8 * dt;
+m.position.addScaledVector(v, dt);
+m.rotation.x += m.userData.r.x * dt;
+m.rotation.y += m.userData.r.y * dt;
+m.rotation.z += m.userData.r.z * dt;
+if(m.position.y < -1.5){
+scene.remove(m);
+m.geometry.dispose();
+m.material.dispose();
+confetti.splice(i,1);
+}
+}
+
+const pulse = 0.5 + 0.5 * Math.sin(now * 0.0035);
+const wallBase = (ghostWallMat.userData && ghostWallMat.userData.base) || 1;
+const roofBase = (ghostRoofMat.userData && ghostRoofMat.userData.base) || 1;
+const treeBase = (ghostTreeMat.userData && ghostTreeMat.userData.base) || 1;
+const decorBase = (ghostDecorMat.userData && ghostDecorMat.userData.base) || 1;
+
+ghostWallMat.opacity = (0.11 + pulse * 0.10) * wallBase;
+ghostRoofMat.opacity = (0.14 + pulse * 0.12) * roofBase;
+ghostTreeMat.opacity = (0.22 + pulse * 0.14) * treeBase;
+ghostDecorMat.opacity = (0.28 + pulse * 0.26) * decorBase;
+
+const decorActive = !!(state && state.cat === 'decor');
+
+if(state){
+state.decorSlots.forEach(s=>{
+if(s.ghost.visible){
+s.ghost.position.y = ROOF_Y - 0.22 + Math.sin(now*0.0025 + s.phase) * 0.06;
+const target = decorActive ? 1.6 : 1;
+s.ghost.scale.x += (target - s.ghost.scale.x) * 0.15;
+s.ghost.scale.y = s.ghost.scale.x;
+s.ghost.scale.z = s.ghost.scale.x;
+}
+if(s.built){
+s.built.position.y = ROOF_Y - 0.28 + Math.sin(now*0.0022 + s.phase) * 0.035;
+s.built.rotation.y = Math.sin(now*0.0012 + s.phase) * 0.12;
+}
+});
+
+/* gentle sway for the big tree */
+if(state.treeGroup){
+state.treeGroup.rotation.z = Math.sin(now * 0.0008) * 0.012;
+}
+}
+
+if(previewMode && now > userInteractUntil){
+desired.theta += 0.0035;
+}
+
+const k = 0.16;
+view.theta += (desired.theta - view.theta) * k;
+view.phi += (desired.phi - view.phi) * k;
+view.radius += (desired.radius - view.radius) * k;
+view.target.lerp(desired.target, k);
+
+const sp = Math.sin(view.phi);
+const cp = Math.cos(view.phi);
+
+camera.position.set(
+view.target.x + view.radius * sp * Math.sin(view.theta),
+view.target.y + view.radius * cp,
+view.target.z + view.radius * sp * Math.cos(view.theta)
+);
+camera.lookAt(view.target);
+
+sun.position.set(view.target.x + 11, 19, view.target.z + 9);
+sun.target.position.copy(view.target);
+sun.target.updateMatrixWorld();
+
+renderer.render(scene, camera);
+}
+
+/* =========================================================
+BOOT
+========================================================= */
+resize();
+window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', ()=> setTimeout(resize, 250));
+
+spawnAnimals();
+loadLevel(0);
+
+setTimeout(()=>{
+showModal(
+'🌿 WELCOME',
+'Build a Sukkah!',
+`<p>A <b>sukkah</b> is a special hut we build for the holiday of <b>Sukkot</b>. We eat in it, relax in it, and even sleep in it for seven days!</p>
+<div class="tipbox">Your job: build a sukkah that follows all the rules. Tap the glowing outlines to place walls, then add schach (the roof), then decorate!</div>
+<ul>
+<li>👆 <b>Tap</b> a glowing outline to build</li>
+<li>👆 <b>Tap again</b> to remove</li>
+<li>🔄 <b>Drag</b> the scene to spin around</li>
+<li>🤏 <b>Pinch</b> to zoom in and out</li>
+<li>📐 Watch the <b>sukkah info</b> panel for dimensions &amp; gaps</li>
+<li>👁️ Tap the <b>eye</b> to see the target sukkah</li>
+<li>🐄 Say hello to the cows, goats, sheep &amp; camels!</li>
+</ul>`,
+'Let\'s build! 🌿',
+null,
+false,
+'📚 Read more — the sources',
+showSources
+);
+}, 700);
+
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>
